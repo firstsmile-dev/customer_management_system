@@ -8,6 +8,7 @@ router = DefaultRouter()
 router.register(r"stores", views.StoreViewSet, basename="store")
 router.register(r"users", views.UserViewSet, basename="user")
 router.register(r"customers", views.CustomerViewSet, basename="customer")
+router.register(r"staff-members", views.StaffMemberViewSet, basename="staff-member")
 
 urlpatterns = [
     path("", views.api_home),

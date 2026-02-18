@@ -5,8 +5,13 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .auth import CmsUserAuth
-from .models import CmsUser, Customer, Store
-from .serializers import CustomerSerializer, StoreSerializer, UserSerializer
+from .models import CmsUser, Customer, StaffMember, Store
+from .serializers import (
+    CustomerSerializer,
+    StaffMemberSerializer,
+    StoreSerializer,
+    UserSerializer,
+)
 
 
 @api_view(["GET"])
@@ -34,6 +39,13 @@ class CustomerViewSet(viewsets.ModelViewSet):
     """CRUD for the `customers` table only. Profile/detail/preferences are separate."""
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+
+
+class StaffMemberViewSet(viewsets.ModelViewSet):
+    """CRUD for the `staff_members` table."""
+
+    queryset = StaffMember.objects.all()
+    serializer_class = StaffMemberSerializer
 
 
 @api_view(["POST"])
