@@ -74,6 +74,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
+# REST framework: JWT auth for CmsUser (api.users)
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.auth.CmsUserJWTAuthentication",
+    ],
+}
+
 # Configure CORS
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

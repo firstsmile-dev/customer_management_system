@@ -1,9 +1,12 @@
-from rest_framework import viewsets
+from django.contrib.auth.hashers import check_password
+from rest_framework import status, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Store
-from .serializers import StoreSerializer
+from .auth import CmsUserAuth
+from .models import CmsUser, Store
+from .serializers import StoreSerializer, UserSerializer
 
 
 @api_view(["GET"])
@@ -19,3 +22,45 @@ class StoreViewSet(viewsets.ModelViewSet):
     """CRUD for stores."""
     queryset = Store.objects.all()
     serializer_class = StoreSerializer
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """CRUD for users (CmsUser). Passwords are hashed; never stored or returned in plain text."""
+    queryset = CmsUser.objects.all()
+    serializer_class = UserSerializer
+
+
+@api_view(["POST"])
+def jwt_login(request):
+    """
+    Authenticate by email + password; return access and refresh JWT.
+    Body: { "email": "...", "password": "..." }
+    """
+    email = request.data.get("email")
+    password = request.data.get("password")
+    if not email or not password:
+        return Response(
+            {"detail": "email and password required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        user = CmsUser.objects.get(email=email)
+    except CmsUser.DoesNotExist:
+        return Response(
+            {"detail": "Invalid email or password"},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+    if not check_password(password, user.password_hash):
+        return Response(
+            {"detail": "Invalid email or password"},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+    wrapper = CmsUserAuth(user)
+    refresh = RefreshToken.for_user(wrapper)
+    return Response({
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user_id": str(user.id),
+        "email": user.email,
+        "role": user.role,
+    })
