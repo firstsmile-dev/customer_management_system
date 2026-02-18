@@ -5,12 +5,13 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .auth import CmsUserAuth
-from .models import CmsUser, Customer, StaffMember, Store
+from .models import CmsUser, Customer, StaffMember, Store, VisitRecord
 from .serializers import (
     CustomerSerializer,
     StaffMemberSerializer,
     StoreSerializer,
     UserSerializer,
+    VisitRecordSerializer,
 )
 
 
@@ -46,6 +47,13 @@ class StaffMemberViewSet(viewsets.ModelViewSet):
 
     queryset = StaffMember.objects.all()
     serializer_class = StaffMemberSerializer
+
+
+class VisitRecordViewSet(viewsets.ModelViewSet):
+    """CRUD for the `visit_records` table."""
+
+    queryset = VisitRecord.objects.all()
+    serializer_class = VisitRecordSerializer
 
 
 @api_view(["POST"])

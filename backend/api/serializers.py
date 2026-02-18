@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
-from .models import CmsUser, Customer, StaffMember, Store
+from .models import CmsUser, Customer, StaffMember, Store, VisitRecord
 
 
 class StoreSerializer(serializers.ModelSerializer):
@@ -55,5 +55,30 @@ class StaffMemberSerializer(serializers.ModelSerializer):
             "is_on_duty",
             "check_in",
             "check_out",
+        ]
+        read_only_fields = ["id"]
+
+
+class VisitRecordSerializer(serializers.ModelSerializer):
+    """CRUD for the `visit_records` table."""
+
+    class Meta:
+        model = VisitRecord
+        fields = [
+            "id",
+            "customer",
+            "cast",
+            "visit_date",
+            "spending",
+            "payment_method",
+            "entry_time",
+            "exit_time",
+            "accompanied",
+            "companions",
+            "memo",
+            "unpaid_amount",
+            "received_amount",
+            "unpaid_date",
+            "receipt",
         ]
         read_only_fields = ["id"]
