@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .auth import CmsUserAuth
-from .models import CmsUser, Store
-from .serializers import StoreSerializer, UserSerializer
+from .models import CmsUser, Customer, Store
+from .serializers import CustomerSerializer, StoreSerializer, UserSerializer
 
 
 @api_view(["GET"])
@@ -28,6 +28,12 @@ class UserViewSet(viewsets.ModelViewSet):
     """CRUD for users (CmsUser). Passwords are hashed; never stored or returned in plain text."""
     queryset = CmsUser.objects.all()
     serializer_class = UserSerializer
+
+
+class CustomerViewSet(viewsets.ModelViewSet):
+    """CRUD for the `customers` table only. Profile/detail/preferences are separate."""
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
 
 
 @api_view(["POST"])

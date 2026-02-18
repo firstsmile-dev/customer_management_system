@@ -7,6 +7,7 @@ from . import views
 router = DefaultRouter()
 router.register(r"stores", views.StoreViewSet, basename="store")
 router.register(r"users", views.UserViewSet, basename="user")
+router.register(r"customers", views.CustomerViewSet, basename="customer")
 
 urlpatterns = [
     path("", views.api_home),

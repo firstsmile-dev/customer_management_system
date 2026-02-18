@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
-from .models import CmsUser, Store
+from .models import CmsUser, Customer, Store
 
 
 class StoreSerializer(serializers.ModelSerializer):
@@ -30,3 +30,11 @@ class UserSerializer(serializers.ModelSerializer):
         if raw_password is not None:
             validated_data["password_hash"] = make_password(raw_password)
         return super().update(instance, validated_data)
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    """CRUD for the `customers` table only (no profile/detail/preferences)."""
+    class Meta:
+        model = Customer
+        fields = ["id", "store", "name", "first_visit", "contact_info", "preferences", "total_spend"]
+        read_only_fields = ["id"]
