@@ -10,6 +10,7 @@ router.register(r"users", views.UserViewSet, basename="user")
 router.register(r"customers", views.CustomerViewSet, basename="customer")
 router.register(r"staff-members", views.StaffMemberViewSet, basename="staff-member")
 router.register(r"visit-records", views.VisitRecordViewSet, basename="visit-record")
+router.register(r"customer-profiles", views.CustomerProfileViewSet, basename="customer-profile")
 
 urlpatterns = [
     path("", views.api_home),
