@@ -5,8 +5,9 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .auth import CmsUserAuth
-from .models import CmsUser, Customer, CustomerProfile, StaffMember, Store, VisitRecord
+from .models import CmsUser, Customer, CustomerDetail, CustomerProfile, StaffMember, Store, VisitRecord
 from .serializers import (
+    CustomerDetailSerializer,
     CustomerProfileSerializer,
     CustomerSerializer,
     StaffMemberSerializer,
@@ -62,6 +63,15 @@ class CustomerProfileViewSet(viewsets.ModelViewSet):
 
     queryset = CustomerProfile.objects.all()
     serializer_class = CustomerProfileSerializer
+    lookup_url_kwarg = "customer_id"
+    lookup_field = "customer"
+
+
+class CustomerDetailViewSet(viewsets.ModelViewSet):
+    """CRUD for the `customers_detail` table (one-to-one with Customer). Lookup by customer UUID."""
+
+    queryset = CustomerDetail.objects.all()
+    serializer_class = CustomerDetailSerializer
     lookup_url_kwarg = "customer_id"
     lookup_field = "customer"
 

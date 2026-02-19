@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
-from .models import CmsUser, Customer, CustomerProfile, StaffMember, Store, VisitRecord
+from .models import CmsUser, Customer, CustomerDetail, CustomerProfile, StaffMember, Store, VisitRecord
 
 
 class StoreSerializer(serializers.ModelSerializer):
@@ -90,3 +90,27 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerProfile
         fields = ["customer", "birthday", "zodiac", "animal_fortune"]
+
+
+class CustomerDetailSerializer(serializers.ModelSerializer):
+    """CRUD for the `customers_detail` table (one-to-one with Customer)."""
+
+    class Meta:
+        model = CustomerDetail
+        fields = [
+            "customer",
+            "blood_type",
+            "birthplace",
+            "appearance_memo",
+            "company_name",
+            "job_title",
+            "job_description",
+            "work_location",
+            "monthly_income",
+            "monthly_drinking_budget",
+            "residence_type",
+            "nearest_station",
+            "has_lover",
+            "marital_status",
+            "children_info",
+        ]
