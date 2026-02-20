@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
+import CustomerList from './pages/CustomerList';
 import CustomerRegistration from './pages/CustomerRegistration';
 
 function App() {
@@ -16,6 +17,12 @@ function App() {
               ホーム
             </Link>
             <Link
+              to="/customers"
+              className="text-gray-600 text-sm hover:text-sakura-500 transition-colors"
+            >
+              お客様一覧
+            </Link>
+            <Link
               to="/customers/register"
               className="text-gray-600 text-sm hover:text-sakura-500 transition-colors"
             >
@@ -25,6 +32,7 @@ function App() {
         </nav>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/customers" element={<CustomerList />} />
           <Route path="/customers/register" element={<CustomerRegistration />} />
         </Routes>
       </div>

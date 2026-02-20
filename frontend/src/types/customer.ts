@@ -6,6 +6,16 @@ export interface Store {
   is_active: boolean;
 }
 
+export interface Customer {
+  id: string;
+  store: string;
+  name: string;
+  first_visit: string;
+  contact_info: Record<string, unknown>;
+  preferences: Record<string, unknown>;
+  total_spend: string;
+}
+
 export interface CustomerFormData {
   store: string;
   name: string;
