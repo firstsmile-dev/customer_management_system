@@ -1,27 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import Home from './pages/Home';
+import CustomerRegistration from './pages/CustomerRegistration';
 
 function App() {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    // Fetch data from Django API
-    axios.get('/api/')
-      .then(response => {
-        setMessage(response.data.message);
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-        setMessage('Could not connect to Django backend');
-      });
-  }, []);
-
   return (
-    <div className="App">
-      <h1>Customer Management System</h1>
-      <p>Frontend: React is running!</p>
-      <p>Backend Connection: {message}</p>
-    </div>
+    <BrowserRouter>
+      <div className="min-h-screen bg-washi">
+        <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-card">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-14 gap-6">
+            <Link
+              to="/"
+              className="text-gray-800 font-medium text-sm hover:text-sakura-500 transition-colors"
+            >
+              ホーム
+            </Link>
+            <Link
+              to="/customers/register"
+              className="text-gray-600 text-sm hover:text-sakura-500 transition-colors"
+            >
+              お客様登録
+            </Link>
+          </div>
+        </nav>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/customers/register" element={<CustomerRegistration />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
 

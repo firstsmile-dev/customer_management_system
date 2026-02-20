@@ -4,3 +4,4 @@ frontend/build
 frontend/node_modules
 frontend/public
 *.svg
+.cursor
