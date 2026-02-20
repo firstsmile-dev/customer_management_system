@@ -7,6 +7,7 @@ from .models import (
     CustomerDetail,
     CustomerPreference,
     CustomerProfile,
+    PerformanceTarget,
     StaffMember,
     Store,
     VisitRecord,
@@ -138,3 +139,12 @@ class CustomerPreferenceSerializer(serializers.ModelSerializer):
             "hobby",
             "favorite_brand",
         ]
+
+
+class PerformanceTargetSerializer(serializers.ModelSerializer):
+    """CRUD for the `performance_targets` table."""
+
+    class Meta:
+        model = PerformanceTarget
+        fields = ["id", "staff", "target_amount", "target_type", "target_date"]
+        read_only_fields = ["id"]

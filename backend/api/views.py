@@ -11,6 +11,7 @@ from .models import (
     CustomerDetail,
     CustomerPreference,
     CustomerProfile,
+    PerformanceTarget,
     StaffMember,
     Store,
     VisitRecord,
@@ -20,6 +21,7 @@ from .serializers import (
     CustomerPreferenceSerializer,
     CustomerProfileSerializer,
     CustomerSerializer,
+    PerformanceTargetSerializer,
     StaffMemberSerializer,
     StoreSerializer,
     UserSerializer,
@@ -93,6 +95,13 @@ class CustomerPreferenceViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerPreferenceSerializer
     lookup_url_kwarg = "customer_id"
     lookup_field = "customer"
+
+
+class PerformanceTargetViewSet(viewsets.ModelViewSet):
+    """CRUD for the `performance_targets` table."""
+
+    queryset = PerformanceTarget.objects.all()
+    serializer_class = PerformanceTargetSerializer
 
 
 @api_view(["POST"])

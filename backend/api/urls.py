@@ -13,6 +13,7 @@ router.register(r"visit-records", views.VisitRecordViewSet, basename="visit-reco
 router.register(r"customer-profiles", views.CustomerProfileViewSet, basename="customer-profile")
 router.register(r"customer-details", views.CustomerDetailViewSet, basename="customer-detail")
 router.register(r"customer-preferences", views.CustomerPreferenceViewSet, basename="customer-preference")
+router.register(r"performance-targets", views.PerformanceTargetViewSet, basename="performance-target")
 
 urlpatterns = [
     path("", views.api_home),
