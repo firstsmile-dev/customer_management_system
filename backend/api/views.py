@@ -11,6 +11,7 @@ from .models import (
     CustomerDetail,
     CustomerPreference,
     CustomerProfile,
+    DailySummary,
     PerformanceTarget,
     StaffMember,
     Store,
@@ -21,6 +22,7 @@ from .serializers import (
     CustomerPreferenceSerializer,
     CustomerProfileSerializer,
     CustomerSerializer,
+    DailySummarySerializer,
     PerformanceTargetSerializer,
     StaffMemberSerializer,
     StoreSerializer,
@@ -102,6 +104,13 @@ class PerformanceTargetViewSet(viewsets.ModelViewSet):
 
     queryset = PerformanceTarget.objects.all()
     serializer_class = PerformanceTargetSerializer
+
+
+class DailySummaryViewSet(viewsets.ModelViewSet):
+    """CRUD for the `daily_summaries` table."""
+
+    queryset = DailySummary.objects.all()
+    serializer_class = DailySummarySerializer
 
 
 @api_view(["POST"])

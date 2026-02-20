@@ -7,6 +7,7 @@ from .models import (
     CustomerDetail,
     CustomerPreference,
     CustomerProfile,
+    DailySummary,
     PerformanceTarget,
     StaffMember,
     Store,
@@ -147,4 +148,13 @@ class PerformanceTargetSerializer(serializers.ModelSerializer):
     class Meta:
         model = PerformanceTarget
         fields = ["id", "staff", "target_amount", "target_type", "target_date"]
+        read_only_fields = ["id"]
+
+
+class DailySummarySerializer(serializers.ModelSerializer):
+    """CRUD for the `daily_summaries` table."""
+
+    class Meta:
+        model = DailySummary
+        fields = ["id", "store", "report_date", "total_sales", "total_expenses", "labor_costs", "notes"]
         read_only_fields = ["id"]

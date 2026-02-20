@@ -14,6 +14,7 @@ router.register(r"customer-profiles", views.CustomerProfileViewSet, basename="cu
 router.register(r"customer-details", views.CustomerDetailViewSet, basename="customer-detail")
 router.register(r"customer-preferences", views.CustomerPreferenceViewSet, basename="customer-preference")
 router.register(r"performance-targets", views.PerformanceTargetViewSet, basename="performance-target")
+router.register(r"daily-summaries", views.DailySummaryViewSet, basename="daily-summary")
 
 urlpatterns = [
     path("", views.api_home),
