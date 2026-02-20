@@ -1,7 +1,16 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
-from .models import CmsUser, Customer, CustomerDetail, CustomerProfile, StaffMember, Store, VisitRecord
+from .models import (
+    CmsUser,
+    Customer,
+    CustomerDetail,
+    CustomerPreference,
+    CustomerProfile,
+    StaffMember,
+    Store,
+    VisitRecord,
+)
 
 
 class StoreSerializer(serializers.ModelSerializer):
@@ -113,4 +122,19 @@ class CustomerDetailSerializer(serializers.ModelSerializer):
             "has_lover",
             "marital_status",
             "children_info",
+        ]
+
+
+class CustomerPreferenceSerializer(serializers.ModelSerializer):
+    """CRUD for the `customer_preferences` table (one-to-one with Customer)."""
+
+    class Meta:
+        model = CustomerPreference
+        fields = [
+            "customer",
+            "alcohol_strength",
+            "favorite_food",
+            "dislike_food",
+            "hobby",
+            "favorite_brand",
         ]
