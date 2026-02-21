@@ -7,6 +7,7 @@ import VisitRecordList from './pages/VisitRecordList';
 import DailySalesEntry from './pages/DailySalesEntry';
 import DailyExpenseEntry from './pages/DailyExpenseEntry';
 import StoreList from './pages/StoreList';
+import UserList from './pages/UserList';
 
 function App() {
   return (
@@ -56,6 +57,12 @@ function App() {
             >
               店舗管理
             </Link>
+            <Link
+              to="/users"
+              className="text-gray-600 text-sm hover:text-sakura-500 transition-colors"
+            >
+              ユーザー管理
+            </Link>
           </div>
         </nav>
         <Routes>
@@ -66,6 +73,7 @@ function App() {
           <Route path="/daily-sales" element={<DailySalesEntry />} />
           <Route path="/daily-expenses" element={<DailyExpenseEntry />} />
           <Route path="/stores" element={<StoreList />} />
+          <Route path="/users" element={<UserList />} />
         </Routes>
       </div>
     </BrowserRouter>
