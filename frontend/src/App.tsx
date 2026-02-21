@@ -4,6 +4,8 @@ import Home from './pages/Home';
 import CustomerList from './pages/CustomerList';
 import CustomerRegistration from './pages/CustomerRegistration';
 import VisitRecordList from './pages/VisitRecordList';
+import DailySalesEntry from './pages/DailySalesEntry';
+import DailyExpenseEntry from './pages/DailyExpenseEntry';
 
 function App() {
   return (
@@ -35,6 +37,18 @@ function App() {
             >
               来店記録
             </Link>
+            <Link
+              to="/daily-sales"
+              className="text-gray-600 text-sm hover:text-sakura-500 transition-colors"
+            >
+              日次売上
+            </Link>
+            <Link
+              to="/daily-expenses"
+              className="text-gray-600 text-sm hover:text-sakura-500 transition-colors"
+            >
+              日次経費
+            </Link>
           </div>
         </nav>
         <Routes>
@@ -42,6 +56,8 @@ function App() {
           <Route path="/customers" element={<CustomerList />} />
           <Route path="/customers/register" element={<CustomerRegistration />} />
           <Route path="/visit-records" element={<VisitRecordList />} />
+          <Route path="/daily-sales" element={<DailySalesEntry />} />
+          <Route path="/daily-expenses" element={<DailyExpenseEntry />} />
         </Routes>
       </div>
     </BrowserRouter>
