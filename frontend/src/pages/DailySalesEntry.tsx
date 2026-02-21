@@ -15,6 +15,16 @@ const IconSave = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
   </svg>
 );
+const IconClose = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+const IconAdd = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
 
 function todayISO() {
   const d = new Date();
@@ -32,6 +42,7 @@ export default function DailySalesEntry() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const fetchSummaries = () => {
     axios.get<DailySummary[]>(`${API}/daily-summaries/`).then((r) => setSummaries(r.data)).catch(() => setSummaries([]));
@@ -51,6 +62,13 @@ export default function DailySalesEntry() {
   }, []);
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? id.slice(0, 8);
+
+  const openModal = () => {
+    setError(null);
+    setReportDate(todayISO());
+    setTotalSales('');
+    setModalOpen(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +100,7 @@ export default function DailySalesEntry() {
       }
       fetchSummaries();
       setSuccess(true);
+      setModalOpen(false);
     } catch (err: unknown) {
       setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : '送信に失敗しました。');
     }
@@ -93,8 +112,19 @@ export default function DailySalesEntry() {
   return (
     <div className="min-h-screen bg-sky-50/80">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-xl sm:text-2xl font-medium text-gray-800 tracking-tight">日次売上入力</h1>
-        <p className="mt-1 text-sm text-gray-500">日別の売上を入力・送信します。</p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-medium text-gray-800 tracking-tight">日次売上入力</h1>
+            <p className="mt-1 text-sm text-gray-500">日別の売上を入力・送信します。</p>
+          </div>
+          <button
+            type="button"
+            onClick={openModal}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600"
+          >
+            <IconAdd /> 売上を登録
+          </button>
+        </div>
 
         {error && (
           <div className="mt-4 rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
@@ -110,56 +140,70 @@ export default function DailySalesEntry() {
         {loading ? (
           <p className="mt-8 text-gray-500">読み込み中…</p>
         ) : (
-          <>
-            <form onSubmit={handleSubmit} className="mt-6 rounded-xl border border-gray-100 bg-white/90 shadow-sm p-6 space-y-4">
-              <div>
-                <label className={labelClass}>店舗 *</label>
-                <select value={storeId} onChange={(e) => setStoreId(e.target.value)} className={inputClass} required>
-                  <option value="">選択してください</option>
-                  {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>対象日 *</label>
-                <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className={inputClass} required />
-              </div>
-              <div>
-                <label className={labelClass}>売上合計（円） *</label>
-                <input type="number" step="0.01" min="0" value={totalSales} onChange={(e) => setTotalSales(e.target.value)} className={inputClass} placeholder="0" required />
-              </div>
-              <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 disabled:opacity-60">
-                <IconSave />{saving ? '送信中…' : '送信'}
-              </button>
-            </form>
+          <section className="mt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <h2 className="text-sm font-medium text-gray-700">直近の日次サマリー（売上）</h2>
+              <button type="button" onClick={openModal} className="text-sm text-sky-600 hover:text-sky-700 font-medium">+ 売上を登録</button>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-white/90 shadow-sm overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/80">
+                    <th className="px-4 py-3 font-medium text-gray-700">店舗</th>
+                    <th className="px-4 py-3 font-medium text-gray-700">対象日</th>
+                    <th className="px-4 py-3 font-medium text-gray-700">売上（円）</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentSummaries.length === 0 ? (
+                    <tr><td colSpan={3} className="px-4 py-6 text-center text-gray-500">データがありません</td></tr>
+                  ) : (
+                    recentSummaries.map((s) => (
+                      <tr key={s.id} className="border-b border-gray-50 hover:bg-sky-50/30">
+                        <td className="px-4 py-3 text-gray-900">{storeName(s.store)}</td>
+                        <td className="px-4 py-3 text-gray-600">{s.report_date}</td>
+                        <td className="px-4 py-3 text-gray-600">{s.total_sales}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
-            <section className="mt-8">
-              <h2 className="text-sm font-medium text-gray-700 mb-3">直近の日次サマリー（売上）</h2>
-              <div className="rounded-xl border border-gray-100 bg-white/90 shadow-sm overflow-hidden">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/80">
-                      <th className="px-4 py-3 font-medium text-gray-700">店舗</th>
-                      <th className="px-4 py-3 font-medium text-gray-700">対象日</th>
-                      <th className="px-4 py-3 font-medium text-gray-700">売上（円）</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentSummaries.length === 0 ? (
-                      <tr><td colSpan={3} className="px-4 py-6 text-center text-gray-500">データがありません</td></tr>
-                    ) : (
-                      recentSummaries.map((s) => (
-                        <tr key={s.id} className="border-b border-gray-50 hover:bg-sky-50/30">
-                          <td className="px-4 py-3 text-gray-900">{storeName(s.store)}</td>
-                          <td className="px-4 py-3 text-gray-600">{s.report_date}</td>
-                          <td className="px-4 py-3 text-gray-600">{s.total_sales}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </>
+        {/* Registration modal */}
+        {modalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm" onClick={() => setModalOpen(false)}>
+            <div className="w-full max-w-md rounded-2xl bg-white shadow-lg border border-gray-100 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg font-medium text-gray-800 border-b border-gray-100 pb-3">売上を登録</h2>
+              <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                <div>
+                  <label className={labelClass}>店舗 *</label>
+                  <select value={storeId} onChange={(e) => setStoreId(e.target.value)} className={inputClass} required>
+                    <option value="">選択してください</option>
+                    {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>対象日 *</label>
+                  <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className={inputClass} required />
+                </div>
+                <div>
+                  <label className={labelClass}>売上合計（円） *</label>
+                  <input type="number" step="0.01" min="0" value={totalSales} onChange={(e) => setTotalSales(e.target.value)} className={inputClass} placeholder="0" required />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 disabled:opacity-60">
+                    <IconSave />{saving ? '送信中…' : '送信'}
+                  </button>
+                  <button type="button" onClick={() => setModalOpen(false)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm hover:bg-gray-50">
+                    <IconClose />キャンセル
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </div>
     </div>

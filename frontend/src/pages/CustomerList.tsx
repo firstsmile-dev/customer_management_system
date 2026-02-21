@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import CustomerDetailViewModal from '../components/CustomerDetailViewModal';
 import type { Customer, Store, CustomerFormData } from '../types/customer';
@@ -55,6 +56,11 @@ const IconFilter = () => (
 const IconClear = () => (
   <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+const IconAdd = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
   </svg>
 );
 
@@ -151,8 +157,18 @@ export default function CustomerList() {
   return (
     <div className="min-h-screen bg-sky-50/80">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-xl sm:text-2xl font-medium text-gray-800 tracking-tight">お客様一覧</h1>
-        <p className="mt-1 text-sm text-gray-500">お客様の閲覧・編集・削除、および詳細情報の確認ができます。</p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-medium text-gray-800 tracking-tight">お客様一覧</h1>
+            <p className="mt-1 text-sm text-gray-500">お客様の閲覧・編集・削除、および詳細情報の確認ができます。</p>
+          </div>
+          <Link
+            to="/customers/register"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600"
+          >
+            <IconAdd /> 新規登録
+          </Link>
+        </div>
 
         {error && (
           <div className="mt-4 rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
