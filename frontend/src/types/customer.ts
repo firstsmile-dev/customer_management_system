@@ -6,6 +6,15 @@ export interface Store {
   is_active: boolean;
 }
 
+export interface StoreFormData {
+  name: string;
+  store_type: string;
+  address: string;
+  is_active: boolean;
+}
+
+export const STORE_TYPES = ['Con Cafe', 'Bar', 'Host Club'] as const;
+
 export interface Customer {
   id: string;
   store: string;

@@ -24,6 +24,7 @@ export default function Home() {
     { to: '/visit-records', label: '来店記録', description: '来店・売上記録の入力・照会', icon: '📅' },
     { to: '/daily-sales', label: '日次売上', description: '日別売上の入力・送信', icon: '💰' },
     { to: '/daily-expenses', label: '日次経費', description: '日別経費・人件費の入力・送信', icon: '📊' },
+    { to: '/stores', label: '店舗管理', description: '店舗の登録・一覧・編集', icon: '🏪' },
   ];
 
   return (
