@@ -21,7 +21,7 @@ export default function Home() {
     },
     // Placeholders for future routes
     { to: '/customers', label: 'お客様一覧', description: '登録済みお客様の検索・一覧', icon: '📋' },
-    { to: '#', label: '来店記録', description: '来店・売上記録の入力・照会', icon: '📅' },
+    { to: '/visit-records', label: '来店記録', description: '来店・売上記録の入力・照会', icon: '📅' },
     { to: '#', label: '日次サマリー', description: '日別売上・経費・人件費の集計', icon: '📊' },
   ];
 

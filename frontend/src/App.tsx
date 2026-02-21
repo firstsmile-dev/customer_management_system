@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import CustomerList from './pages/CustomerList';
 import CustomerRegistration from './pages/CustomerRegistration';
+import VisitRecordList from './pages/VisitRecordList';
 
 function App() {
   return (
@@ -28,12 +29,19 @@ function App() {
             >
               お客様登録
             </Link>
+            <Link
+              to="/visit-records"
+              className="text-gray-600 text-sm hover:text-sakura-500 transition-colors"
+            >
+              来店記録
+            </Link>
           </div>
         </nav>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/customers" element={<CustomerList />} />
           <Route path="/customers/register" element={<CustomerRegistration />} />
+          <Route path="/visit-records" element={<VisitRecordList />} />
         </Routes>
       </div>
     </BrowserRouter>
