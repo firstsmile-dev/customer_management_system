@@ -144,6 +144,7 @@ def jwt_login(request):
         "access": str(refresh.access_token),
         "refresh": str(refresh),
         "user_id": str(user.id),
+        "username": user.username or "",
         "email": user.email,
         "role": user.role,
     })

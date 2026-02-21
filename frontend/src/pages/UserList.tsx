@@ -79,6 +79,7 @@ export default function UserList() {
   const openEdit = (u: User) => {
     setEditId(u.id);
     setEditForm({
+      username: u.username ?? '',
       email: u.email,
       role: u.role,
       password: '',
@@ -93,6 +94,7 @@ export default function UserList() {
     setError(null);
     try {
       await axios.post(`${API}/users/`, {
+        username: createForm.username,
         email: createForm.email,
         password: createForm.password,
         role: createForm.role,
@@ -113,7 +115,8 @@ export default function UserList() {
     setSaving(true);
     setError(null);
     try {
-      const payload: { email: string; role: string; password?: string } = {
+      const payload: { username: string; email: string; role: string; password?: string } = {
+        username: editForm.username,
         email: editForm.email,
         role: editForm.role,
       };
@@ -142,6 +145,7 @@ export default function UserList() {
   };
 
   const emptyCreateForm = (): UserCreateFormData => ({
+    username: '',
     email: '',
     password: '',
     role: USER_ROLES[0],
@@ -177,6 +181,7 @@ export default function UserList() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80">
+                  <th className="px-4 py-3 font-medium text-gray-700">ユーザー名</th>
                   <th className="px-4 py-3 font-medium text-gray-700">メールアドレス</th>
                   <th className="px-4 py-3 font-medium text-gray-700">権限</th>
                   <th className="px-4 py-3 font-medium text-gray-700">登録日</th>
@@ -185,11 +190,12 @@ export default function UserList() {
               </thead>
               <tbody>
                 {users.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">登録がありません</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">登録がありません</td></tr>
                 ) : (
                   users.map((u) => (
                     <tr key={u.id} className="border-b border-gray-50 hover:bg-sky-50/50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{u.email}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{u.username || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{u.email}</td>
                       <td className="px-4 py-3 text-gray-600">{USER_ROLE_LABELS[u.role] ?? u.role}</td>
                       <td className="px-4 py-3 text-gray-600">{formatDate(u.created_at)}</td>
                       <td className="px-4 py-3 text-right">
@@ -223,7 +229,8 @@ export default function UserList() {
               <div className="w-full max-w-md rounded-2xl bg-white shadow-lg border border-gray-100 p-6" onClick={(e) => e.stopPropagation()}>
                 <h2 className="text-lg font-medium text-gray-800 border-b border-gray-100 pb-3">ユーザー情報</h2>
                 <dl className="mt-3 space-y-2 text-sm">
-                  <div><dt className="text-gray-500">メールアドレス</dt><dd className="font-medium">{u.email}</dd></div>
+                  <div><dt className="text-gray-500">ユーザー名</dt><dd className="font-medium">{u.username || '—'}</dd></div>
+                  <div><dt className="text-gray-500">メールアドレス</dt><dd>{u.email}</dd></div>
                   <div><dt className="text-gray-500">権限</dt><dd>{USER_ROLE_LABELS[u.role] ?? u.role}</dd></div>
                   <div><dt className="text-gray-500">登録日</dt><dd>{formatDate(u.created_at)}</dd></div>
                 </dl>
@@ -277,7 +284,7 @@ export default function UserList() {
               <div className="w-full max-w-sm rounded-2xl bg-white shadow-lg border border-gray-100 p-6" onClick={(e) => e.stopPropagation()}>
                 <h2 className="text-lg font-medium text-gray-800">アカウントを無効化</h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  <strong>{u.email}</strong> のアカウントを無効化します。この操作ではアカウントが削除され、ログインできなくなります。よろしいですか？
+                  <strong>{u.username || u.email}</strong> のアカウントを無効化します。この操作ではアカウントが削除され、ログインできなくなります。よろしいですか？
                 </p>
                 <div className="mt-4 flex gap-2">
                   <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600" onClick={() => handleDeactivate(u.id)}><IconCheck />無効化する</button>
@@ -304,6 +311,10 @@ function UserCreateForm({ form, setForm, onSubmit, saving, onCancel }: UserCreat
   const update = (patch: Partial<UserCreateFormData>) => setForm((f) => (f ? { ...f, ...patch } : null));
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-4">
+      <div>
+        <label className={labelClass}>ユーザー名</label>
+        <input type="text" value={form.username} onChange={(e) => update({ username: e.target.value })} className={inputClass} placeholder="表示名（任意）" autoComplete="username" />
+      </div>
       <div>
         <label className={labelClass}>メールアドレス *</label>
         <input type="email" value={form.email} onChange={(e) => update({ email: e.target.value })} className={inputClass} required autoComplete="email" />
@@ -340,6 +351,10 @@ function UserEditForm({ form, setForm, onSubmit, saving, onCancel }: UserEditFor
   const update = (patch: Partial<UserEditFormData>) => setForm((f) => (f ? { ...f, ...patch } : null));
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-4">
+      <div>
+        <label className={labelClass}>ユーザー名</label>
+        <input type="text" value={form.username} onChange={(e) => update({ username: e.target.value })} className={inputClass} placeholder="表示名（任意）" autoComplete="username" />
+      </div>
       <div>
         <label className={labelClass}>メールアドレス *</label>
         <input type="email" value={form.email} onChange={(e) => update({ email: e.target.value })} className={inputClass} required autoComplete="email" />

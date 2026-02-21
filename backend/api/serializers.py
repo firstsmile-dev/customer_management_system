@@ -27,7 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CmsUser
-        fields = ["id", "email", "password", "role", "created_at"]
+        fields = ["id", "username", "email", "password", "role", "created_at"]
         read_only_fields = ["id", "created_at"]
         extra_kwargs = {"password": {"write_only": True}}
 
