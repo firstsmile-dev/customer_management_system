@@ -47,11 +47,23 @@ const IconSave = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
   </svg>
 );
+const IconFilter = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+  </svg>
+);
+const IconClear = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterName, setFilterName] = useState('');
+  const [filterStore, setFilterStore] = useState('');
   const [detailModalId, setDetailModalId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<CustomerFormData | null>(null);
@@ -72,6 +84,21 @@ export default function CustomerList() {
   }, []);
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? id.slice(0, 8);
+
+  const filteredCustomers = React.useMemo(() => {
+    return customers.filter((c) => {
+      const matchName = !filterName.trim() || c.name.toLowerCase().includes(filterName.trim().toLowerCase());
+      const matchStore = !filterStore || c.store === filterStore;
+      return matchName && matchStore;
+    });
+  }, [customers, filterName, filterStore]);
+
+  const clearFilters = () => {
+    setFilterName('');
+    setFilterStore('');
+  };
+
+  const hasActiveFilters = Boolean(filterName.trim() || filterStore);
 
   const openEdit = (c: Customer) => {
     setEditId(c.id);
@@ -136,7 +163,44 @@ export default function CustomerList() {
         {loading ? (
           <p className="mt-8 text-gray-500">読み込み中…</p>
         ) : (
-          <div className="mt-6 overflow-x-auto rounded-xl border border-gray-100 bg-white/90 shadow-soft">
+          <>
+            <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-gray-100 bg-white/90 px-4 py-3 shadow-soft">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                <IconFilter /> 絞り込み
+              </span>
+              <input
+                type="text"
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                placeholder="名前で検索"
+                className="flex-1 min-w-[140px] max-w-[200px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-sky-300 focus:ring-1 focus:ring-sky-300"
+              />
+              <select
+                value={filterStore}
+                onChange={(e) => setFilterStore(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-sky-300 focus:ring-1 focus:ring-sky-300"
+              >
+                <option value="">すべての店舗</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  title="クリア"
+                  aria-label="絞り込みをクリア"
+                  className="p-1.5 rounded-lg text-sky-600 hover:text-sky-700 hover:bg-sky-50 transition-colors"
+                >
+                  <IconClear />
+                </button>
+              )}
+              <span className="text-sm text-gray-500">
+                {filteredCustomers.length}件{customers.length !== filteredCustomers.length && ` / 全${customers.length}件`}
+              </span>
+            </div>
+            <div className="mt-3 overflow-x-auto rounded-xl border border-gray-100 bg-white/90 shadow-soft">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80">
@@ -148,10 +212,10 @@ export default function CustomerList() {
                 </tr>
               </thead>
               <tbody>
-                {customers.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">登録がありません</td></tr>
+                {filteredCustomers.length === 0 ? (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">{hasActiveFilters ? '条件に一致する登録がありません' : '登録がありません'}</td></tr>
                 ) : (
-                  customers.map((c) => (
+                  filteredCustomers.map((c) => (
                     <tr key={c.id} className="border-b border-gray-50 hover:bg-sky-50/50">
                       <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                       <td className="px-4 py-3 text-gray-600">{storeName(c.store)}</td>
@@ -178,6 +242,7 @@ export default function CustomerList() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {viewId && (() => {
