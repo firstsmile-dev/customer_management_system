@@ -43,6 +43,46 @@ const inputClass =
   'mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm focus:border-sakura-300 focus:ring-1 focus:ring-sakura-300 text-sm';
 const labelClass = 'block text-sm font-medium text-gray-700';
 
+/** Western zodiac sign (星座) from date string YYYY-MM-DD. Returns Japanese name. */
+function getZodiacSignFromDate(dateStr: string): string {
+  if (!dateStr || dateStr.length < 10) return '';
+  const [, m, d] = dateStr.split('-').map(Number);
+  const month = m;
+  const day = d;
+  if (month === 1 && day >= 20) return '水瓶座';
+  if (month === 2 && day <= 18) return '水瓶座';
+  if (month === 2 && day >= 19) return '魚座';
+  if (month === 3 && day <= 20) return '魚座';
+  if (month === 3 && day >= 21) return '牡羊座';
+  if (month === 4 && day <= 19) return '牡羊座';
+  if (month === 4 && day >= 20) return '牡牛座';
+  if (month === 5 && day <= 20) return '牡牛座';
+  if (month === 5 && day >= 21) return '双子座';
+  if (month === 6 && day <= 20) return '双子座';
+  if (month === 6 && day >= 21) return '蟹座';
+  if (month === 7 && day <= 22) return '蟹座';
+  if (month === 7 && day >= 23) return '獅子座';
+  if (month === 8 && day <= 22) return '獅子座';
+  if (month === 8 && day >= 23) return '乙女座';
+  if (month === 9 && day <= 22) return '乙女座';
+  if (month === 9 && day >= 23) return '天秤座';
+  if (month === 10 && day <= 22) return '天秤座';
+  if (month === 10 && day >= 23) return '蠍座';
+  if (month === 11 && day <= 21) return '蠍座';
+  if (month === 11 && day >= 22) return '射手座';
+  if (month === 12 && day <= 21) return '射手座';
+  return '摩羯座'; // Dec 22 - Jan 19
+}
+
+/** 干支 (eto) from date string YYYY-MM-DD. Returns 十二支 character. */
+function getEtoFromDate(dateStr: string): string {
+  if (!dateStr || dateStr.length < 4) return '';
+  const year = parseInt(dateStr.slice(0, 4), 10);
+  if (Number.isNaN(year)) return '';
+  const eto = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+  return eto[(year - 4) % 12] ?? '';
+}
+
 interface CustomerDetailViewModalProps {
   customerId: string;
   onClose: () => void;
@@ -265,9 +305,25 @@ export default function CustomerDetailViewModal({
             <form onSubmit={handleSave} className="space-y-6">
               <section className="rounded-xl border border-gray-100 bg-sakura-50/30 p-4 space-y-3">
                 <h3 className="text-sm font-medium text-gray-700 border-b border-gray-100 pb-2">プロフィール</h3>
-                <div><label className={labelClass}>誕生日</label><input type="date" value={editProfile.birthday} onChange={(e) => setEditProfile((p) => ({ ...p, birthday: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>星座</label><input type="text" value={editProfile.zodiac} onChange={(e) => setEditProfile((p) => ({ ...p, zodiac: e.target.value }))} className={inputClass} /></div>
-                <div><label className={labelClass}>干支</label><input type="text" value={editProfile.animal_fortune} onChange={(e) => setEditProfile((p) => ({ ...p, animal_fortune: e.target.value }))} className={inputClass} /></div>
+                <div>
+                  <label className={labelClass}>誕生日</label>
+                  <input
+                    type="date"
+                    value={editProfile.birthday}
+                    onChange={(e) => {
+                      const birthday = e.target.value;
+                      setEditProfile((p) => ({
+                        ...p,
+                        birthday,
+                        zodiac: getZodiacSignFromDate(birthday),
+                        animal_fortune: getEtoFromDate(birthday),
+                      }));
+                    }}
+                    className={inputClass}
+                  />
+                </div>
+                <div><label className={labelClass}>星座</label><input type="text" value={editProfile.zodiac} onChange={(e) => setEditProfile((p) => ({ ...p, zodiac: e.target.value }))} className={inputClass} placeholder="誕生日で自動" /></div>
+                <div><label className={labelClass}>干支</label><input type="text" value={editProfile.animal_fortune} onChange={(e) => setEditProfile((p) => ({ ...p, animal_fortune: e.target.value }))} className={inputClass} placeholder="誕生日で自動" /></div>
               </section>
               <section className="rounded-xl border border-gray-100 bg-sakura-50/30 p-4 space-y-3">
                 <h3 className="text-sm font-medium text-gray-700 border-b border-gray-100 pb-2">詳細</h3>
