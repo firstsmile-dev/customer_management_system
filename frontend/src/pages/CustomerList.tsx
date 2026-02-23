@@ -70,6 +70,8 @@ export default function CustomerList() {
   const [loading, setLoading] = useState(true);
   const [filterName, setFilterName] = useState('');
   const [filterStore, setFilterStore] = useState('');
+  const [filterFirstVisitFrom, setFilterFirstVisitFrom] = useState('');
+  const [filterFirstVisitTo, setFilterFirstVisitTo] = useState('');
   const [detailModalId, setDetailModalId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<CustomerFormData | null>(null);
@@ -95,16 +97,20 @@ export default function CustomerList() {
     return customers.filter((c) => {
       const matchName = !filterName.trim() || c.name.toLowerCase().includes(filterName.trim().toLowerCase());
       const matchStore = !filterStore || c.store === filterStore;
-      return matchName && matchStore;
+      const matchFirstVisitFrom = !filterFirstVisitFrom || (c.first_visit && c.first_visit >= filterFirstVisitFrom);
+      const matchFirstVisitTo = !filterFirstVisitTo || (c.first_visit && c.first_visit <= filterFirstVisitTo);
+      return matchName && matchStore && matchFirstVisitFrom && matchFirstVisitTo;
     });
-  }, [customers, filterName, filterStore]);
+  }, [customers, filterName, filterStore, filterFirstVisitFrom, filterFirstVisitTo]);
 
   const clearFilters = () => {
     setFilterName('');
     setFilterStore('');
+    setFilterFirstVisitFrom('');
+    setFilterFirstVisitTo('');
   };
 
-  const hasActiveFilters = Boolean(filterName.trim() || filterStore);
+  const hasActiveFilters = Boolean(filterName.trim() || filterStore || filterFirstVisitFrom || filterFirstVisitTo);
 
   const openEdit = (c: Customer) => {
     setEditId(c.id);
@@ -201,6 +207,22 @@ export default function CustomerList() {
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
+              <span className="text-sm text-gray-500 hidden sm:inline">初回来店</span>
+              <input
+                type="date"
+                value={filterFirstVisitFrom}
+                onChange={(e) => setFilterFirstVisitFrom(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-sky-300 focus:ring-1 focus:ring-sky-300 min-w-0"
+                title="初回来店（から）"
+              />
+              <span className="text-sm text-gray-400">～</span>
+              <input
+                type="date"
+                value={filterFirstVisitTo}
+                onChange={(e) => setFilterFirstVisitTo(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-sky-300 focus:ring-1 focus:ring-sky-300 min-w-0"
+                title="初回来店（まで）"
+              />
               {hasActiveFilters && (
                 <button
                   type="button"
