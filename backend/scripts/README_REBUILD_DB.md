@@ -2,6 +2,14 @@
 
 To delete the existing database and re-run all migrations from scratch:
 
+##postsql reset password
+
+```bash
+sudo -u postgres psql
+ALTER USER postgres WITH PASSWORD 'new_password';
+\q
+```
+
 ## Option 1: Use the script (PostgreSQL)
 
 From the project root (with PostgreSQL running and a superuser available):
