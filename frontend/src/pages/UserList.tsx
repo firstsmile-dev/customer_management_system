@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import type { User, UserCreateFormData, UserEditFormData } from '../types/user';
 import { USER_ROLES, USER_ROLE_LABELS } from '../types/user';
 
@@ -55,6 +56,8 @@ function formatDate(iso: string) {
 }
 
 export default function UserList() {
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'Admin';
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewId, setViewId] = useState<string | null>(null);
@@ -115,11 +118,11 @@ export default function UserList() {
     setSaving(true);
     setError(null);
     try {
-      const payload: { username: string; email: string; role: string; password?: string } = {
+      const payload: { username: string; email: string; role?: string; password?: string } = {
         username: editForm.username,
         email: editForm.email,
-        role: editForm.role,
       };
+      if (isAdmin) payload.role = editForm.role;
       if (editForm.password.trim()) payload.password = editForm.password;
       await axios.patch(`${API}/users/${editId}/`, payload);
       fetchUsers();
@@ -201,7 +204,9 @@ export default function UserList() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                           <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => setViewId(u.id)}><IconView />表示</button>
-                          <button type="button" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 text-xs sm:text-sm" onClick={() => openEdit(u)}><IconEdit />編集</button>
+                          {(isAdmin || currentUser?.user_id === u.id) && (
+                            <button type="button" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 text-xs sm:text-sm" onClick={() => openEdit(u)}><IconEdit />編集</button>
+                          )}
                           {deactivateConfirmId === u.id ? (
                             <>
                               <button type="button" className="inline-flex items-center gap-1 text-red-600 text-xs sm:text-sm font-medium" onClick={() => handleDeactivate(u.id)}><IconCheck />無効化する</button>
@@ -270,6 +275,7 @@ export default function UserList() {
                 onSubmit={handleSaveEdit}
                 saving={saving}
                 onCancel={() => { setEditId(null); setEditForm(null); }}
+                canEditRole={isAdmin}
               />
             </div>
           </div>
@@ -345,9 +351,11 @@ interface UserEditFormProps {
   onSubmit: (e: React.FormEvent) => void;
   saving: boolean;
   onCancel: () => void;
+  /** Only administrators can change role. */
+  canEditRole?: boolean;
 }
 
-function UserEditForm({ form, setForm, onSubmit, saving, onCancel }: UserEditFormProps) {
+function UserEditForm({ form, setForm, onSubmit, saving, onCancel, canEditRole = false }: UserEditFormProps) {
   const update = (patch: Partial<UserEditFormData>) => setForm((f) => (f ? { ...f, ...patch } : null));
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-4">
@@ -361,9 +369,13 @@ function UserEditForm({ form, setForm, onSubmit, saving, onCancel }: UserEditFor
       </div>
       <div>
         <label className={labelClass}>権限 *</label>
-        <select value={form.role} onChange={(e) => update({ role: e.target.value })} className={inputClass} required>
-          {USER_ROLES.map((r) => <option key={r} value={r}>{USER_ROLE_LABELS[r] ?? r}</option>)}
-        </select>
+        {canEditRole ? (
+          <select value={form.role} onChange={(e) => update({ role: e.target.value })} className={inputClass} required>
+            {USER_ROLES.map((r) => <option key={r} value={r}>{USER_ROLE_LABELS[r] ?? r}</option>)}
+          </select>
+        ) : (
+          <input type="text" value={USER_ROLE_LABELS[form.role] ?? form.role} className={inputClass} readOnly disabled />
+        )}
       </div>
       <div>
         <label className={labelClass}>新しいパスワード</label>

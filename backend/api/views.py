@@ -47,9 +47,53 @@ class StoreViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """CRUD for users (CmsUser). Passwords are hashed; never stored or returned in plain text."""
+    """CRUD for users (CmsUser). Passwords are hashed; never stored or returned in plain text.
+    Only admins can change role or edit other users; non-admins can only update their own email and password.
+    """
     queryset = CmsUser.objects.all()
     serializer_class = UserSerializer
+
+    def _get_request_user_role(self):
+        user = getattr(self.request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return None
+        return getattr(getattr(user, "cms_user", None), "role", None)
+
+    def _is_admin(self):
+        return self._get_request_user_role() == "Admin"
+
+    def _request_user_pk(self):
+        user = getattr(self.request, "user", None)
+        if user is None:
+            return None
+        return getattr(user, "pk", None)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.get("partial", False)
+        instance = self.get_object()
+        req_pk = self._request_user_pk()
+        if req_pk is None:
+            return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+        is_admin = self._is_admin()
+        if not is_admin and instance.pk != req_pk:
+            return Response(
+                {"detail": "Only administrators can edit other users."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not is_admin and instance.pk == req_pk:
+            allowed = {"email", "password", "username"}
+            data = {k: request.data.get(k) for k in allowed if k in request.data}
+            if not data and not partial:
+                data = {"email": getattr(instance, "email", None)}
+            serializer = self.get_serializer(instance, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs["partial"] = True
+        return self.update(request, *args, **kwargs)
 
 
 class CustomerViewSet(viewsets.ModelViewSet):

@@ -12,6 +12,7 @@ import DailyExpenseEntry from './pages/DailyExpenseEntry';
 import StoreList from './pages/StoreList';
 import UserList from './pages/UserList';
 import StaffMemberList from './pages/StaffMemberList';
+import MyPage from './pages/MyPage';
 
 function Nav() {
   const { user, loading, logout, isAllowed } = useAuth();
@@ -20,6 +21,7 @@ function Nav() {
 
   const navLinks: { to: string; label: string }[] = [
     { to: '/', label: 'ホーム' },
+    { to: '/my-page', label: 'マイページ' },
     { to: '/customers', label: 'お客様一覧' },
     { to: '/customers/register', label: 'お客様登録' },
     { to: '/visit-records', label: '来店記録' },
@@ -95,6 +97,7 @@ function AppContent() {
         <Route path="/stores" element={<ProtectedRoute><StoreList /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
         <Route path="/staff-members" element={<ProtectedRoute><StaffMemberList /></ProtectedRoute>} />
+        <Route path="/my-page" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
       </Routes>
     </div>
   );

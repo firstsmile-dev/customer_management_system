@@ -9,10 +9,10 @@ const STORAGE_USER = 'cms_user';
 
 /** Paths allowed per role. Admin can access all. */
 const ROLE_PATHS: Record<string, string[]> = {
-  Cast: ['/', '/customers', '/customers/register'],
-  Staff: ['/', '/customers', '/customers/register', '/daily-sales', '/daily-expenses'],
-  Manager: ['/', '/customers', '/customers/register', '/daily-sales', '/daily-expenses'],
-  Admin: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/stores', '/users', '/staff-members'],
+  Cast: ['/', '/customers', '/customers/register', '/my-page'],
+  Staff: ['/', '/customers', '/customers/register', '/daily-sales', '/daily-expenses', '/my-page'],
+  Manager: ['/', '/customers', '/customers/register', '/daily-sales', '/daily-expenses', '/my-page'],
+  Admin: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/stores', '/users', '/staff-members', '/my-page'],
 };
 
 function getStoredUser(): AuthUser | null {
@@ -45,6 +45,8 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   isAllowed: (path: string) => boolean;
+  /** Update stored user (e.g. after email change). Persists to localStorage. */
+  updateStoredUser: (patch: Partial<Pick<AuthUser, 'email' | 'username'>>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -92,6 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return allowed.some((p) => p === normalized || normalized.startsWith(p + '/'));
   }, [user]);
 
+  const updateStoredUser = useCallback((patch: Partial<Pick<AuthUser, 'email' | 'username'>>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...patch };
+      try {
+        localStorage.setItem(STORAGE_USER, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     const access = localStorage.getItem(STORAGE_ACCESS);
     const u = getStoredUser();
@@ -136,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => axios.interceptors.response.eject(interceptor);
   }, [logout]);
 
-  const value: AuthContextValue = { user, loading, login, logout, isAllowed };
+  const value: AuthContextValue = { user, loading, login, logout, isAllowed, updateStoredUser };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
