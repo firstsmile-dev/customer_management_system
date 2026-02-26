@@ -115,7 +115,11 @@ export default function StaffMemberList() {
     setLoading(false);
   }, []);
 
-  const userEmail = (id: string) => users.find((u) => u.id === id)?.email ?? id.slice(0, 8);
+  const userDisplayName = (id: string) => {
+    const u = users.find((x) => x.id === id);
+    if (!u) return id.slice(0, 8);
+    return (u.username && u.username.trim()) ? u.username : u.email;
+  };
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? id.slice(0, 8);
 
   const openEdit = (m: StaffMember) => {
@@ -225,7 +229,7 @@ export default function StaffMemberList() {
                 ) : (
                   members.map((m) => (
                     <tr key={m.id} className="border-b border-gray-50 hover:bg-sky-50/50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{userEmail(m.user)}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{userDisplayName(m.user)}</td>
                       <td className="px-4 py-3 text-gray-600">{storeName(m.store)}</td>
                       <td className="px-4 py-3 text-gray-600">{m.hourly_wage}</td>
                       <td className="px-4 py-3 text-gray-600">{m.commission_rate}</td>
@@ -263,7 +267,7 @@ export default function StaffMemberList() {
               <div className="w-full max-w-md rounded-2xl bg-white shadow-lg border border-gray-100 p-6" onClick={(e) => e.stopPropagation()}>
                 <h2 className="text-lg font-medium text-gray-800 border-b border-gray-100 pb-3">スタッフ情報</h2>
                 <dl className="mt-3 space-y-2 text-sm">
-                  <div><dt className="text-gray-500">ユーザー</dt><dd className="font-medium">{userEmail(m.user)}</dd></div>
+                  <div><dt className="text-gray-500">ユーザー</dt><dd className="font-medium">{userDisplayName(m.user)}</dd></div>
                   <div><dt className="text-gray-500">店舗</dt><dd>{storeName(m.store)}</dd></div>
                   <div><dt className="text-gray-500">時給（円）</dt><dd>{m.hourly_wage}</dd></div>
                   <div><dt className="text-gray-500">歩合率</dt><dd>{m.commission_rate}</dd></div>
@@ -341,7 +345,11 @@ function StaffMemberForm({ form, setForm, users, stores, onSubmit, saving, submi
         <label className={labelClass}>ユーザー *</label>
         <select value={form.user} onChange={(e) => update({ user: e.target.value })} className={inputClass} required>
           <option value="">選択してください</option>
-          {users.map((u) => <option key={u.id} value={u.id}>{u.email}</option>)}
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {(u.username && u.username.trim()) ? u.username : u.email}
+            </option>
+          ))}
         </select>
       </div>
       <div>
