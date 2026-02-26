@@ -1,6 +1,7 @@
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -234,6 +235,11 @@ def jwt_login(request):
             {"detail": "Invalid email or password"},
             status=status.HTTP_401_UNAUTHORIZED,
         )
+    return _login_response(user)
+
+
+def _login_response(user):
+    """Build JWT login-style response for a CmsUser."""
     wrapper = CmsUserAuth(user)
     refresh = RefreshToken.for_user(wrapper)
     store_id = str(user.store_id) if user.store_id else None
@@ -248,3 +254,67 @@ def jwt_login(request):
         "store_id": store_id,
         "store_name": store_name,
     })
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def register(request):
+    """
+    Public registration. Body: { "username", "email", "password", "store" (optional for first admin) }.
+    - If no admin user exists: create user with role Admin; store is optional (can register with no store).
+    - Otherwise: create user with role Cast; store is required and at least one store must exist.
+    """
+    email = (request.data.get("email") or "").strip()
+    password = request.data.get("password")
+    username = (request.data.get("username") or "").strip()
+    store_id = request.data.get("store")
+
+    if not email or not password:
+        return Response(
+            {"detail": "Email and password are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if CmsUser.objects.filter(email=email).exists():
+        return Response(
+            {"detail": "A user with this email already exists."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    has_admin = CmsUser.objects.filter(role=CmsUser.Role.ADMIN).exists()
+    if has_admin:
+        # Registering as Cast: store is required and must exist
+        if not Store.objects.exists():
+            return Response(
+                {"detail": "No stores available. An administrator must create a store first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not store_id:
+            return Response(
+                {"detail": "Store selection is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            store = Store.objects.get(pk=store_id)
+        except (Store.DoesNotExist, ValueError, TypeError):
+            return Response(
+                {"detail": "Invalid store."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        # First user: register as Admin; store is optional (no store yet)
+        store = None
+        if store_id:
+            try:
+                store = Store.objects.get(pk=store_id)
+            except (Store.DoesNotExist, ValueError, TypeError):
+                pass  # ignore invalid store when no stores exist; use store=None
+
+    role = CmsUser.Role.ADMIN if not has_admin else CmsUser.Role.CAST
+    user = CmsUser.objects.create(
+        email=email,
+        username=username,
+        password_hash=make_password(password),
+        role=role,
+        store=store,
+    )
+    return _login_response(user)

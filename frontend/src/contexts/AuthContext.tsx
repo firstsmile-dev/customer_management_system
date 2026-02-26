@@ -48,6 +48,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Set auth from a login/register API response (e.g. after registration). */
+  loginWithResponse: (data: LoginResponse) => void;
   logout: () => void;
   isAllowed: (path: string) => boolean;
   /** Update stored user (e.g. after email change). Persists to localStorage. */
@@ -66,23 +68,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const loginWithResponse = useCallback((data: LoginResponse) => {
+    const authUser: AuthUser = {
+      user_id: data.user_id,
+      username: data.username ?? '',
+      email: data.email,
+      role: data.role,
+      store_id: data.store_id ?? null,
+      store_name: data.store_name ?? null,
+    };
+    localStorage.setItem(STORAGE_ACCESS, data.access);
+    localStorage.setItem(STORAGE_REFRESH, data.refresh);
+    localStorage.setItem(STORAGE_USER, JSON.stringify(authUser));
+    setAxiosAuth(data.access);
+    setUser(authUser);
+  }, []);
+
   const login = useCallback(async (email: string, password: string): Promise<{ ok: boolean; error?: string }> => {
     try {
       const res = await axios.post<LoginResponse>(`${API}/auth/login/`, { email, password });
-      const data = res.data;
-      const authUser: AuthUser = {
-        user_id: data.user_id,
-        username: data.username ?? '',
-        email: data.email,
-        role: data.role,
-        store_id: data.store_id ?? null,
-        store_name: data.store_name ?? null,
-      };
-      localStorage.setItem(STORAGE_ACCESS, data.access);
-      localStorage.setItem(STORAGE_REFRESH, data.refresh);
-      localStorage.setItem(STORAGE_USER, JSON.stringify(authUser));
-      setAxiosAuth(data.access);
-      setUser(authUser);
+      loginWithResponse(res.data);
       return { ok: true };
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
@@ -158,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => axios.interceptors.response.eject(interceptor);
   }, [logout]);
 
-  const value: AuthContextValue = { user, loading, login, logout, isAllowed, updateStoredUser };
+  const value: AuthContextValue = { user, loading, login, loginWithResponse, logout, isAllowed, updateStoredUser };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

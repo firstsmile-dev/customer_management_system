@@ -19,6 +19,7 @@ router.register(r"daily-summaries", views.DailySummaryViewSet, basename="daily-s
 urlpatterns = [
     path("", views.api_home),
     path("auth/login/", views.jwt_login),
+    path("auth/register/", views.register),
     path("auth/refresh/", TokenRefreshView.as_view()),
     path("", include(router.urls)),
 ]

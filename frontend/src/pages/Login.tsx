@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const inputClass =
@@ -75,7 +75,16 @@ export default function Login() {
           >
             {submitting ? 'ログイン中…' : 'ログイン'}
           </button>
+          <Link
+            to="/register"
+            className="block w-full mt-3 py-2.5 rounded-xl border-2 border-sakura-300 text-sakura-700 text-sm font-medium text-center hover:bg-sakura-50 transition-colors"
+          >
+            新規登録
+          </Link>
         </form>
+        <p className="mt-6 text-center text-sm text-gray-500">
+          アカウントをお持ちでない方は上の「新規登録」ボタンから登録してください。
+        </p>
       </div>
     </div>
   );

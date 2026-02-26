@@ -4,6 +4,7 @@ import { useAuth, AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import CustomerList from './pages/CustomerList';
 import CustomerRegistration from './pages/CustomerRegistration';
 import VisitRecordList from './pages/VisitRecordList';
@@ -101,6 +102,7 @@ function AppContent() {
       {user && <Nav />}
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/customers" element={<ProtectedRoute><CustomerList /></ProtectedRoute>} />
         <Route path="/customers/register" element={<ProtectedRoute><CustomerRegistration /></ProtectedRoute>} />
