@@ -26,6 +26,21 @@ const IconAdd = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
   </svg>
 );
+const IconEdit = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+const IconDelete = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+const IconCheck = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
 
 function todayISO() {
   const d = new Date();
@@ -61,6 +76,8 @@ export default function DailyExpenseEntry() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const fetchSummaries = () => {
     axios.get<DailySummary[]>(`${API}/daily-summaries/`).then((r) => setSummaries(r.data)).catch(() => setSummaries([]));
@@ -93,11 +110,28 @@ export default function DailyExpenseEntry() {
 
   const openModal = () => {
     setError(null);
+    setEditId(null);
     setReportDate(todayISO());
     setTotalExpenses('');
     setLaborCosts('');
     setNotes('');
     setModalOpen(true);
+  };
+
+  const openEdit = (s: DailySummary) => {
+    setError(null);
+    setEditId(s.id);
+    setStoreId(s.store);
+    setReportDate(s.report_date);
+    setTotalExpenses(s.total_expenses ?? '');
+    setLaborCosts(s.labor_costs ?? '');
+    setNotes(s.notes ?? '');
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,18 +144,8 @@ export default function DailyExpenseEntry() {
     const labor = laborCosts.trim() === '' ? '0' : laborCosts;
     const totalSales = String(computedTotalSales);
     try {
-      const existing = summaries.find((s) => s.store === storeId && s.report_date === reportDate);
-      if (existing) {
-        await axios.patch(`${API}/daily-summaries/${existing.id}/`, {
-          store: existing.store,
-          report_date: existing.report_date,
-          total_sales: totalSales,
-          total_expenses: expenses,
-          labor_costs: labor,
-          notes: notes.trim(),
-        });
-      } else {
-        await axios.post(`${API}/daily-summaries/`, {
+      if (editId) {
+        await axios.patch(`${API}/daily-summaries/${editId}/`, {
           store: storeId,
           report_date: reportDate,
           total_sales: totalSales,
@@ -129,21 +153,53 @@ export default function DailyExpenseEntry() {
           labor_costs: labor,
           notes: notes.trim(),
         });
+      } else {
+        const existing = summaries.find((s) => s.store === storeId && s.report_date === reportDate);
+        if (existing) {
+          await axios.patch(`${API}/daily-summaries/${existing.id}/`, {
+            store: existing.store,
+            report_date: existing.report_date,
+            total_sales: totalSales,
+            total_expenses: expenses,
+            labor_costs: labor,
+            notes: notes.trim(),
+          });
+        } else {
+          await axios.post(`${API}/daily-summaries/`, {
+            store: storeId,
+            report_date: reportDate,
+            total_sales: totalSales,
+            total_expenses: expenses,
+            labor_costs: labor,
+            notes: notes.trim(),
+          });
+        }
       }
       fetchSummaries();
       setSuccess(true);
-      setModalOpen(false);
+      closeModal();
     } catch (err: unknown) {
       setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : '送信に失敗しました。');
     }
     setSaving(false);
   };
 
+  const handleDelete = async (id: string) => {
+    setError(null);
+    try {
+      await axios.delete(`${API}/daily-summaries/${id}/`);
+      fetchSummaries();
+      setDeleteConfirmId(null);
+    } catch {
+      setError('削除に失敗しました。');
+    }
+  };
+
   const recentSummaries = [...summaries].sort((a, b) => b.report_date.localeCompare(a.report_date)).slice(0, 20);
 
   return (
     <div className="min-h-screen bg-sky-50/80">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-medium text-gray-800 tracking-tight">日次経費入力</h1>
@@ -187,11 +243,12 @@ export default function DailyExpenseEntry() {
                     <th className="px-4 py-3 font-medium text-gray-700">経費（円）</th>
                     <th className="px-4 py-3 font-medium text-gray-700">人件費（円）</th>
                     <th className="px-4 py-3 font-medium text-gray-700">備考</th>
+                    <th className="px-4 py-3 font-medium text-gray-700 text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentSummaries.length === 0 ? (
-                    <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">データがありません</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-500">データがありません</td></tr>
                   ) : (
                     recentSummaries.map((s) => (
                       <tr key={s.id} className="border-b border-gray-50 hover:bg-sky-50/30">
@@ -200,7 +257,20 @@ export default function DailyExpenseEntry() {
                         <td className="px-4 py-3 text-gray-600">{s.total_sales}</td>
                         <td className="px-4 py-3 text-gray-600">{s.total_expenses}</td>
                         <td className="px-4 py-3 text-gray-600">{s.labor_costs}</td>
-                        <td className="px-4 py-3 text-gray-500 max-w-[120px] truncate" title={s.notes || undefined}>{s.notes || '—'}</td>
+                        <td className="px-4 py-3 text-gray-500 max-w-[240px] truncate" title={s.notes || undefined}>{s.notes || '—'}</td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
+                            <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => openEdit(s)}><IconEdit />編集</button>
+                            {deleteConfirmId === s.id ? (
+                              <>
+                                <button type="button" className="inline-flex items-center gap-1 text-red-600 text-xs sm:text-sm font-medium" onClick={() => handleDelete(s.id)}><IconCheck />削除する</button>
+                                <button type="button" className="inline-flex items-center gap-1 text-gray-500 text-xs sm:text-sm" onClick={() => setDeleteConfirmId(null)}><IconClose />キャンセル</button>
+                              </>
+                            ) : (
+                              <button type="button" className="inline-flex items-center gap-1 text-red-500 hover:text-red-600 text-xs sm:text-sm" onClick={() => setDeleteConfirmId(s.id)}><IconDelete />削除</button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -210,11 +280,11 @@ export default function DailyExpenseEntry() {
           </section>
         )}
 
-        {/* Registration modal */}
+        {/* Create / Edit modal */}
         {modalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm" onClick={() => setModalOpen(false)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm" onClick={closeModal}>
             <div className="w-full max-w-md rounded-2xl bg-white shadow-lg border border-gray-100 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-lg font-medium text-gray-800 border-b border-gray-100 pb-3">経費を登録</h2>
+              <h2 className="text-lg font-medium text-gray-800 border-b border-gray-100 pb-3">{editId ? '経費を編集' : '経費を登録'}</h2>
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                 <div>
                   <label className={labelClass}>店舗 *</label>
@@ -249,7 +319,7 @@ export default function DailyExpenseEntry() {
                   <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 disabled:opacity-60">
                     <IconSave />{saving ? '送信中…' : '送信'}
                   </button>
-                  <button type="button" onClick={() => setModalOpen(false)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm hover:bg-gray-50">
+                  <button type="button" onClick={closeModal} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm hover:bg-gray-50">
                     <IconClose />キャンセル
                   </button>
                 </div>
