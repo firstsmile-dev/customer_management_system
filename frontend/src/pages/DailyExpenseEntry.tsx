@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import type { DailySummary } from '../types/dailySummary';
-import type { Store } from '../types/customer';
+import type { Store, Customer } from '../types/customer';
+import type { VisitRecord } from '../types/visitRecord';
 
 const API = '/api';
 
@@ -32,9 +33,24 @@ function todayISO() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/** Sum of visit_records.spending for the given store and date (customers belonging to that store, visit_date = date). */
+function computeTotalSalesFromVisits(
+  visitRecords: VisitRecord[],
+  customers: Customer[],
+  storeId: string,
+  reportDate: string
+): number {
+  const customerIdsForStore = new Set(customers.filter((c) => c.store === storeId).map((c) => c.id));
+  return visitRecords
+    .filter((r) => r.visit_date === reportDate && customerIdsForStore.has(r.customer))
+    .reduce((sum, r) => sum + Number(r.spending || 0), 0);
+}
+
 export default function DailyExpenseEntry() {
   const [stores, setStores] = useState<Store[]>([]);
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [visitRecords, setVisitRecords] = useState<VisitRecord[]>([]);
   const [storeId, setStoreId] = useState('');
   const [reportDate, setReportDate] = useState(todayISO());
   const [totalExpenses, setTotalExpenses] = useState('');
@@ -55,15 +71,25 @@ export default function DailyExpenseEntry() {
     Promise.all([
       axios.get<Store[]>(`${API}/stores/`).then((r) => r.data).catch(() => []),
       axios.get<DailySummary[]>(`${API}/daily-summaries/`).then((r) => r.data).catch(() => []),
-    ]).then(([s, sum]) => {
+      axios.get<Customer[]>(`${API}/customers/`).then((r) => r.data).catch(() => []),
+      axios.get<VisitRecord[]>(`${API}/visit-records/`).then((r) => r.data).catch(() => []),
+    ]).then(([s, sum, custs, recs]) => {
       setStores(s);
       setSummaries(sum);
+      setCustomers(custs);
+      setVisitRecords(recs);
       if (s.length > 0 && !storeId) setStoreId(s[0].id);
     });
     setLoading(false);
   }, []);
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? id.slice(0, 8);
+
+  /** Computed total_sales for the current modal store + date (from visit_records). */
+  const computedTotalSales = useMemo(
+    () => (storeId && reportDate ? computeTotalSalesFromVisits(visitRecords, customers, storeId, reportDate) : 0),
+    [visitRecords, customers, storeId, reportDate]
+  );
 
   const openModal = () => {
     setError(null);
@@ -82,13 +108,14 @@ export default function DailyExpenseEntry() {
     setSuccess(false);
     const expenses = totalExpenses.trim() === '' ? '0' : totalExpenses;
     const labor = laborCosts.trim() === '' ? '0' : laborCosts;
+    const totalSales = String(computedTotalSales);
     try {
       const existing = summaries.find((s) => s.store === storeId && s.report_date === reportDate);
       if (existing) {
         await axios.patch(`${API}/daily-summaries/${existing.id}/`, {
           store: existing.store,
           report_date: existing.report_date,
-          total_sales: existing.total_sales,
+          total_sales: totalSales,
           total_expenses: expenses,
           labor_costs: labor,
           notes: notes.trim(),
@@ -97,7 +124,7 @@ export default function DailyExpenseEntry() {
         await axios.post(`${API}/daily-summaries/`, {
           store: storeId,
           report_date: reportDate,
-          total_sales: '0',
+          total_sales: totalSales,
           total_expenses: expenses,
           labor_costs: labor,
           notes: notes.trim(),
@@ -156,6 +183,7 @@ export default function DailyExpenseEntry() {
                   <tr className="border-b border-gray-100 bg-gray-50/80">
                     <th className="px-4 py-3 font-medium text-gray-700">店舗</th>
                     <th className="px-4 py-3 font-medium text-gray-700">対象日</th>
+                    <th className="px-4 py-3 font-medium text-gray-700">売上（円）</th>
                     <th className="px-4 py-3 font-medium text-gray-700">経費（円）</th>
                     <th className="px-4 py-3 font-medium text-gray-700">人件費（円）</th>
                     <th className="px-4 py-3 font-medium text-gray-700">備考</th>
@@ -163,12 +191,13 @@ export default function DailyExpenseEntry() {
                 </thead>
                 <tbody>
                   {recentSummaries.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">データがありません</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">データがありません</td></tr>
                   ) : (
                     recentSummaries.map((s) => (
                       <tr key={s.id} className="border-b border-gray-50 hover:bg-sky-50/30">
                         <td className="px-4 py-3 text-gray-900">{storeName(s.store)}</td>
                         <td className="px-4 py-3 text-gray-600">{s.report_date}</td>
+                        <td className="px-4 py-3 text-gray-600">{s.total_sales}</td>
                         <td className="px-4 py-3 text-gray-600">{s.total_expenses}</td>
                         <td className="px-4 py-3 text-gray-600">{s.labor_costs}</td>
                         <td className="px-4 py-3 text-gray-500 max-w-[120px] truncate" title={s.notes || undefined}>{s.notes || '—'}</td>
@@ -197,6 +226,12 @@ export default function DailyExpenseEntry() {
                 <div>
                   <label className={labelClass}>対象日 *</label>
                   <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className={inputClass} required />
+                </div>
+                <div>
+                  <label className={labelClass}>売上合計（円）</label>
+                  <div className="mt-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800">
+                    {computedTotalSales.toLocaleString()}（来店記録の利用額の合計）
+                  </div>
                 </div>
                 <div>
                   <label className={labelClass}>経費合計（円） *</label>
