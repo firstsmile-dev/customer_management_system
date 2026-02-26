@@ -7,6 +7,7 @@ import type {
   PaymentMethod,
 } from '../types/visitRecord';
 import type { Customer } from '../types/customer';
+import type { User } from '../types/user';
 import { PAYMENT_METHODS } from '../types/visitRecord';
 
 const API = '/api';
@@ -111,6 +112,7 @@ export default function VisitRecordList() {
   const [records, setRecords] = useState<VisitRecord[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<VisitRecordFormData | null>(null);
@@ -131,16 +133,24 @@ export default function VisitRecordList() {
       axios.get<VisitRecord[]>(`${API}/visit-records/`).then((r) => r.data).catch(() => []),
       axios.get<Customer[]>(`${API}/customers/`).then((r) => r.data).catch(() => []),
       axios.get<StaffMember[]>(`${API}/staff-members/`).then((r) => r.data).catch(() => []),
-    ]).then(([recs, custs, st]) => {
+      axios.get<User[]>(`${API}/users/`).then((r) => r.data).catch(() => []),
+    ]).then(([recs, custs, st, u]) => {
       setRecords(recs);
       setCustomers(custs);
       setStaff(st);
+      setUsers(u);
     });
     setLoading(false);
   }, []);
 
   const customerName = (id: string) => customers.find((c) => c.id === id)?.name ?? id.slice(0, 8);
-  const castLabel = (id: string) => staff.find((s) => s.id === id)?.id?.slice(0, 8) ?? id.slice(0, 8);
+  const castLabel = (staffMemberId: string) => {
+    const sm = staff.find((s) => s.id === staffMemberId);
+    if (!sm) return staffMemberId.slice(0, 8);
+    const u = users.find((x) => x.id === sm.user);
+    if (!u) return staffMemberId.slice(0, 8);
+    return (u.username && u.username.trim()) ? u.username : u.email;
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -322,6 +332,7 @@ export default function VisitRecordList() {
                 setForm={setCreateForm}
                 customers={customers}
                 staff={staff}
+                users={users}
                 onSubmit={handleCreate}
                 saving={saving}
                 submitLabel="登録"
@@ -341,6 +352,7 @@ export default function VisitRecordList() {
                 setForm={setEditForm}
                 customers={customers}
                 staff={staff}
+                users={users}
                 onSubmit={handleUpdate}
                 saving={saving}
                 submitLabel="保存"
@@ -359,13 +371,20 @@ interface VisitRecordFormProps {
   setForm: React.Dispatch<React.SetStateAction<VisitRecordFormData | null>>;
   customers: Customer[];
   staff: StaffMember[];
+  users: User[];
   onSubmit: (e: React.FormEvent) => void;
   saving: boolean;
   submitLabel: string;
   onCancel: () => void;
 }
 
-function VisitRecordForm({ form, setForm, customers, staff, onSubmit, saving, submitLabel, onCancel }: VisitRecordFormProps) {
+function staffDisplayName(s: StaffMember, users: User[]): string {
+  const u = users.find((x) => x.id === s.user);
+  if (!u) return s.id.slice(0, 8);
+  return (u.username && u.username.trim()) ? u.username : u.email;
+}
+
+function VisitRecordForm({ form, setForm, customers, staff, users, onSubmit, saving, submitLabel, onCancel }: VisitRecordFormProps) {
   const update = (patch: Partial<VisitRecordFormData>) => setForm((f) => (f ? { ...f, ...patch } : null));
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-4">
@@ -380,7 +399,9 @@ function VisitRecordForm({ form, setForm, customers, staff, onSubmit, saving, su
         <label className={labelClass}>担当（キャスト） *</label>
         <select value={form.cast} onChange={(e) => update({ cast: e.target.value })} className={inputClass} required>
           <option value="">選択してください</option>
-          {staff.map((s) => <option key={s.id} value={s.id}>{s.id.slice(0, 8)}…</option>)}
+          {staff.map((s) => (
+            <option key={s.id} value={s.id}>{staffDisplayName(s, users)}</option>
+          ))}
         </select>
       </div>
       <div className="grid grid-cols-2 gap-4">
