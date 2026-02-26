@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import type { Store, StoreFormData } from '../types/customer';
 import { STORE_TYPES } from '../types/customer';
 
@@ -49,6 +50,8 @@ const IconAdd = () => (
 );
 
 export default function StoreList() {
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'Admin';
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewId, setViewId] = useState<string | null>(null);
@@ -140,13 +143,15 @@ export default function StoreList() {
             <h1 className="text-xl sm:text-2xl font-medium text-gray-800 tracking-tight">店舗管理</h1>
             <p className="mt-1 text-sm text-gray-500">店舗の登録・閲覧・編集・削除ができます。</p>
           </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600"
-            onClick={() => { setCreateOpen(true); setError(null); setCreateForm(emptyCreateForm()); }}
-          >
-            <IconAdd /> 新規登録
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600"
+              onClick={() => { setCreateOpen(true); setError(null); setCreateForm(emptyCreateForm()); }}
+            >
+              <IconAdd /> 新規登録
+            </button>
+          )}
         </div>
 
         {error && (
