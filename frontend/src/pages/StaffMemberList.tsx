@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import type { StaffMember, StaffMemberFormData } from '../types/staffMember';
 import type { Store } from '../types/customer';
 import type { User } from '../types/user';
@@ -84,10 +85,17 @@ const emptyForm = (): StaffMemberFormData => ({
 });
 
 export default function StaffMemberList() {
+  const { user: currentUser } = useAuth();
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
+
+  /** Stores the logged-in user can select (only their store for non-admin; all for admin). */
+  const allowedStores = useMemo(() => {
+    if (!currentUser?.store_id) return stores;
+    return stores.filter((s) => s.id === currentUser.store_id);
+  }, [stores, currentUser?.store_id]);
   const [viewId, setViewId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<StaffMemberFormData | null>(null);
@@ -293,7 +301,7 @@ export default function StaffMemberList() {
                 form={createForm}
                 setForm={setCreateForm}
                 users={users}
-                stores={stores}
+                stores={allowedStores}
                 onSubmit={handleCreate}
                 saving={saving}
                 submitLabel="登録"
@@ -312,7 +320,7 @@ export default function StaffMemberList() {
                 form={editForm}
                 setForm={setEditForm}
                 users={users}
-                stores={stores}
+                stores={allowedStores}
                 onSubmit={handleSaveEdit}
                 saving={saving}
                 submitLabel="保存"
@@ -337,26 +345,39 @@ interface StaffMemberFormProps {
   onCancel: () => void;
 }
 
+/** Cast users (role Cast) that belong to the given store. */
+function castsForStore(users: User[], storeId: string): User[] {
+  if (!storeId) return [];
+  return users.filter((u) => u.role === 'Cast' && u.store === storeId);
+}
+
 function StaffMemberForm({ form, setForm, users, stores, onSubmit, saving, submitLabel, onCancel }: StaffMemberFormProps) {
   const update = (patch: Partial<StaffMemberFormData>) => setForm((f) => (f ? { ...f, ...patch } : null));
+  const handleStoreChange = (storeId: string) => {
+    const casts = castsForStore(users, storeId);
+    const keepUser = storeId && form.user && casts.some((u) => u.id === form.user);
+    update({ store: storeId, user: keepUser ? form.user : '' });
+  };
+  const casts = form.store ? castsForStore(users, form.store) : [];
+
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-4">
       <div>
-        <label className={labelClass}>ユーザー *</label>
-        <select value={form.user} onChange={(e) => update({ user: e.target.value })} className={inputClass} required>
+        <label className={labelClass}>店舗 *</label>
+        <select value={form.store} onChange={(e) => handleStoreChange(e.target.value)} className={inputClass} required>
           <option value="">選択してください</option>
-          {users.map((u) => (
+          {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className={labelClass}>キャスト（ユーザー） *</label>
+        <select value={form.user} onChange={(e) => update({ user: e.target.value })} className={inputClass} required disabled={!form.store}>
+          <option value="">{form.store ? '選択してください' : '先に店舗を選択してください'}</option>
+          {casts.map((u) => (
             <option key={u.id} value={u.id}>
               {(u.username && u.username.trim()) ? u.username : u.email}
             </option>
           ))}
-        </select>
-      </div>
-      <div>
-        <label className={labelClass}>店舗 *</label>
-        <select value={form.store} onChange={(e) => update({ store: e.target.value })} className={inputClass} required>
-          <option value="">選択してください</option>
-          {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
       <div>
