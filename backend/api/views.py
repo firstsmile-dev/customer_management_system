@@ -68,6 +68,13 @@ class UserViewSet(viewsets.ModelViewSet):
             return None
         return getattr(user, "pk", None)
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role = self._get_request_user_role()
+        if role == "Staff":
+            return qs.filter(role=CmsUser.Role.CAST)
+        return qs
+
     def update(self, request, *args, **kwargs):
         partial = kwargs.get("partial", False)
         instance = self.get_object()
@@ -103,10 +110,54 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
 
 class StaffMemberViewSet(viewsets.ModelViewSet):
-    """CRUD for the `staff_members` table."""
+    """CRUD for the `staff_members` table.
+    Staff role: can only list/create/update/delete staff members whose user is Cast.
+    """
 
     queryset = StaffMember.objects.all()
     serializer_class = StaffMemberSerializer
+
+    def _get_request_user_role(self):
+        user = getattr(self.request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return None
+        return getattr(getattr(user, "cms_user", None), "role", None)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role = self._get_request_user_role()
+        if role == "Staff":
+            return qs.filter(user__role=CmsUser.Role.CAST)
+        return qs
+
+    def create(self, request, *args, **kwargs):
+        if self._get_request_user_role() == "Staff":
+            user_id = request.data.get("user")
+            try:
+                u = CmsUser.objects.get(pk=user_id)
+                if u.role != CmsUser.Role.CAST:
+                    return Response(
+                        {"detail": "Staff can only assign Cast users to staff members."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+            except CmsUser.DoesNotExist:
+                pass
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        if self._get_request_user_role() == "Staff":
+            user_id = request.data.get("user")
+            if user_id is not None:
+                try:
+                    u = CmsUser.objects.get(pk=user_id)
+                    if u.role != CmsUser.Role.CAST:
+                        return Response(
+                            {"detail": "Staff can only assign Cast users to staff members."},
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
+                except CmsUser.DoesNotExist:
+                    pass
+        return super().update(request, *args, **kwargs)
 
 
 class VisitRecordViewSet(viewsets.ModelViewSet):
