@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import type { Store } from '../types/customer';
 import type { User, UserCreateFormData, UserEditFormData } from '../types/user';
 import { USER_ROLES, USER_ROLE_LABELS } from '../types/user';
 
@@ -59,6 +60,7 @@ export default function UserList() {
   const { user: currentUser } = useAuth();
   const isAdmin = currentUser?.role === 'Admin';
   const [users, setUsers] = useState<User[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewId, setViewId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
@@ -75,9 +77,14 @@ export default function UserList() {
 
   useEffect(() => {
     setLoading(true);
-    fetchUsers();
-    setLoading(false);
+    Promise.all([
+      axios.get<User[]>(`${API}/users/`).then((res) => setUsers(res.data)).catch(() => setUsers([])),
+      axios.get<Store[]>(`${API}/stores/`).then((res) => setStores(res.data)).catch(() => setStores([])),
+    ]).finally(() => setLoading(false));
   }, []);
+
+  const storeName = (id: string | null | undefined) =>
+    id ? (stores.find((s) => s.id === id)?.name ?? id.slice(0, 8)) : '全店舗';
 
   const openEdit = (u: User) => {
     setEditId(u.id);
@@ -86,6 +93,7 @@ export default function UserList() {
       email: u.email,
       role: u.role,
       password: '',
+      store: u.store ?? null,
     });
     setError(null);
   };
@@ -96,12 +104,14 @@ export default function UserList() {
     setSaving(true);
     setError(null);
     try {
-      await axios.post(`${API}/users/`, {
+      const payload: Record<string, unknown> = {
         username: createForm.username,
         email: createForm.email,
         password: createForm.password,
         role: createForm.role,
-      });
+      };
+      if (createForm.store) payload.store = createForm.store;
+      await axios.post(`${API}/users/`, payload);
       fetchUsers();
       setCreateOpen(false);
       setCreateForm(null);
@@ -118,11 +128,14 @@ export default function UserList() {
     setSaving(true);
     setError(null);
     try {
-      const payload: { username: string; email: string; role?: string; password?: string } = {
+      const payload: { username: string; email: string; role?: string; password?: string; store?: string | null } = {
         username: editForm.username,
         email: editForm.email,
       };
-      if (isAdmin) payload.role = editForm.role;
+      if (isAdmin) {
+        payload.role = editForm.role;
+        payload.store = editForm.store || null;
+      }
       if (editForm.password.trim()) payload.password = editForm.password;
       await axios.patch(`${API}/users/${editId}/`, payload);
       fetchUsers();
@@ -152,6 +165,7 @@ export default function UserList() {
     email: '',
     password: '',
     role: USER_ROLES[0],
+    store: null,
   });
 
   return (
@@ -187,19 +201,21 @@ export default function UserList() {
                   <th className="px-4 py-3 font-medium text-gray-700">ユーザー名</th>
                   <th className="px-4 py-3 font-medium text-gray-700">メールアドレス</th>
                   <th className="px-4 py-3 font-medium text-gray-700">権限</th>
+                  <th className="px-4 py-3 font-medium text-gray-700">店舗</th>
                   <th className="px-4 py-3 font-medium text-gray-700">登録日</th>
                   <th className="px-4 py-3 font-medium text-gray-700 text-right">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {users.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">登録がありません</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">登録がありません</td></tr>
                 ) : (
                   users.map((u) => (
                     <tr key={u.id} className="border-b border-gray-50 hover:bg-sky-50/50">
                       <td className="px-4 py-3 font-medium text-gray-900">{u.username || '—'}</td>
                       <td className="px-4 py-3 text-gray-600">{u.email}</td>
                       <td className="px-4 py-3 text-gray-600">{USER_ROLE_LABELS[u.role] ?? u.role}</td>
+                      <td className="px-4 py-3 text-gray-600">{storeName(u.store)}</td>
                       <td className="px-4 py-3 text-gray-600">{formatDate(u.created_at)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
@@ -237,6 +253,7 @@ export default function UserList() {
                   <div><dt className="text-gray-500">ユーザー名</dt><dd className="font-medium">{u.username || '—'}</dd></div>
                   <div><dt className="text-gray-500">メールアドレス</dt><dd>{u.email}</dd></div>
                   <div><dt className="text-gray-500">権限</dt><dd>{USER_ROLE_LABELS[u.role] ?? u.role}</dd></div>
+                  <div><dt className="text-gray-500">店舗</dt><dd>{storeName(u.store)}</dd></div>
                   <div><dt className="text-gray-500">登録日</dt><dd>{formatDate(u.created_at)}</dd></div>
                 </dl>
                 <div className="mt-4 flex gap-2">
@@ -259,6 +276,8 @@ export default function UserList() {
                 onSubmit={handleCreate}
                 saving={saving}
                 onCancel={() => { setCreateOpen(false); setCreateForm(null); }}
+                stores={stores}
+                isAdmin={isAdmin}
               />
             </div>
           </div>
@@ -276,6 +295,9 @@ export default function UserList() {
                 saving={saving}
                 onCancel={() => { setEditId(null); setEditForm(null); }}
                 canEditRole={isAdmin}
+                canEditStore={isAdmin}
+                stores={stores}
+                storeName={storeName}
               />
             </div>
           </div>
@@ -311,9 +333,11 @@ interface UserCreateFormProps {
   onSubmit: (e: React.FormEvent) => void;
   saving: boolean;
   onCancel: () => void;
+  stores: Store[];
+  isAdmin: boolean;
 }
 
-function UserCreateForm({ form, setForm, onSubmit, saving, onCancel }: UserCreateFormProps) {
+function UserCreateForm({ form, setForm, onSubmit, saving, onCancel, stores, isAdmin }: UserCreateFormProps) {
   const update = (patch: Partial<UserCreateFormData>) => setForm((f) => (f ? { ...f, ...patch } : null));
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-4">
@@ -335,6 +359,15 @@ function UserCreateForm({ form, setForm, onSubmit, saving, onCancel }: UserCreat
           {USER_ROLES.map((r) => <option key={r} value={r}>{USER_ROLE_LABELS[r] ?? r}</option>)}
         </select>
       </div>
+      {isAdmin && (
+        <div>
+          <label className={labelClass}>店舗</label>
+          <select value={form.store ?? ''} onChange={(e) => update({ store: e.target.value || null })} className={inputClass}>
+            <option value="">全店舗（管理者）</option>
+            {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+      )}
       <div className="flex gap-2 pt-2">
         <button type="submit" disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 disabled:opacity-60">
           {saving ? '送信中…' : <><IconSave />登録</>}
@@ -351,11 +384,13 @@ interface UserEditFormProps {
   onSubmit: (e: React.FormEvent) => void;
   saving: boolean;
   onCancel: () => void;
-  /** Only administrators can change role. */
   canEditRole?: boolean;
+  canEditStore?: boolean;
+  stores: Store[];
+  storeName: (id: string | null | undefined) => string;
 }
 
-function UserEditForm({ form, setForm, onSubmit, saving, onCancel, canEditRole = false }: UserEditFormProps) {
+function UserEditForm({ form, setForm, onSubmit, saving, onCancel, canEditRole = false, canEditStore = false, stores, storeName }: UserEditFormProps) {
   const update = (patch: Partial<UserEditFormData>) => setForm((f) => (f ? { ...f, ...patch } : null));
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-4">
@@ -375,6 +410,17 @@ function UserEditForm({ form, setForm, onSubmit, saving, onCancel, canEditRole =
           </select>
         ) : (
           <input type="text" value={USER_ROLE_LABELS[form.role] ?? form.role} className={inputClass} readOnly disabled />
+        )}
+      </div>
+      <div>
+        <label className={labelClass}>店舗</label>
+        {canEditStore ? (
+          <select value={form.store ?? ''} onChange={(e) => update({ store: e.target.value || null })} className={inputClass}>
+            <option value="">全店舗（管理者）</option>
+            {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        ) : (
+          <input type="text" value={storeName(form.store)} className={inputClass} readOnly disabled />
         )}
       </div>
       <div>

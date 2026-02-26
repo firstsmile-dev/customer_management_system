@@ -3,6 +3,7 @@ export interface User {
   username?: string;
   email: string;
   role: string;
+  store?: string | null;
   created_at: string;
 }
 
@@ -11,6 +12,7 @@ export interface UserCreateFormData {
   email: string;
   password: string;
   role: string;
+  store: string | null;
 }
 
 export interface UserEditFormData {
@@ -18,6 +20,7 @@ export interface UserEditFormData {
   email: string;
   role: string;
   password: string;
+  store: string | null;
 }
 
 export const USER_ROLES = ['Cast', 'Staff', 'Manager', 'Admin'] as const;

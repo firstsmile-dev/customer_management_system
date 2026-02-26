@@ -19,7 +19,12 @@ function getStoredUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(STORAGE_USER);
     if (!raw) return null;
-    return JSON.parse(raw) as AuthUser;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return {
+      ...parsed,
+      store_id: parsed.store_id ?? null,
+      store_name: parsed.store_name ?? null,
+    } as AuthUser;
   } catch {
     return null;
   }
@@ -46,7 +51,7 @@ interface AuthContextValue {
   logout: () => void;
   isAllowed: (path: string) => boolean;
   /** Update stored user (e.g. after email change). Persists to localStorage. */
-  updateStoredUser: (patch: Partial<Pick<AuthUser, 'email' | 'username'>>) => void;
+  updateStoredUser: (patch: Partial<Pick<AuthUser, 'email' | 'username' | 'store_id' | 'store_name'>>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -70,6 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: data.username ?? '',
         email: data.email,
         role: data.role,
+        store_id: data.store_id ?? null,
+        store_name: data.store_name ?? null,
       };
       localStorage.setItem(STORAGE_ACCESS, data.access);
       localStorage.setItem(STORAGE_REFRESH, data.refresh);
@@ -94,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return allowed.some((p) => p === normalized || normalized.startsWith(p + '/'));
   }, [user]);
 
-  const updateStoredUser = useCallback((patch: Partial<Pick<AuthUser, 'email' | 'username'>>) => {
+  const updateStoredUser = useCallback((patch: Partial<Pick<AuthUser, 'email' | 'username' | 'store_id' | 'store_name'>>) => {
     setUser((prev) => {
       if (!prev) return null;
       const next = { ...prev, ...patch };

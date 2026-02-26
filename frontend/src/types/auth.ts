@@ -5,6 +5,8 @@ export interface AuthUser {
   username: string;
   email: string;
   role: AuthRole;
+  store_id: string | null;
+  store_name: string | null;
 }
 
 export interface LoginResponse {
@@ -14,4 +16,6 @@ export interface LoginResponse {
   username: string;
   email: string;
   role: AuthRole;
+  store_id: string | null;
+  store_name: string | null;
 }

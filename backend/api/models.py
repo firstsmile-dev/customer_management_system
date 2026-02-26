@@ -52,6 +52,14 @@ class CmsUser(models.Model):
         choices=Role.choices,
         default=Role.CAST,
     )
+    store = models.ForeignKey(
+        Store,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="store_id",
+        related_name="users",
+    )
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

@@ -88,6 +88,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
         if not is_admin and instance.pk == req_pk:
+            # Non-admin editing self: cannot change role or store
             allowed = {"email", "password", "username"}
             data = {k: request.data.get(k) for k in allowed if k in request.data}
             if not data and not partial:
@@ -235,6 +236,8 @@ def jwt_login(request):
         )
     wrapper = CmsUserAuth(user)
     refresh = RefreshToken.for_user(wrapper)
+    store_id = str(user.store_id) if user.store_id else None
+    store_name = user.store.name if user.store else None
     return Response({
         "access": str(refresh.access_token),
         "refresh": str(refresh),
@@ -242,4 +245,6 @@ def jwt_login(request):
         "username": user.username or "",
         "email": user.email,
         "role": user.role,
+        "store_id": store_id,
+        "store_name": store_name,
     })
