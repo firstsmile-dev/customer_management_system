@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { ERROR_MESSAGES } from '../utils/errorMessages';
 
 const API = '/api';
 
@@ -44,8 +45,8 @@ export default function MyPage() {
       setSuccess('メールアドレスを変更しました。');
       setNewEmail('');
       setEmailModalOpen(false);
-    } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.response?.data?.email?.[0] ?? err.message) : '変更に失敗しました。');
+    } catch {
+      setError(ERROR_MESSAGES.change);
     }
     setSaving(false);
   };
@@ -55,11 +56,11 @@ export default function MyPage() {
     setError(null);
     setSuccess(null);
     if (newPassword !== confirmPassword) {
-      setError('パスワードが一致しません。');
+      setError('パスワードが一致しません。もう一度ご確認ください。');
       return;
     }
     if (newPassword.length < 1) {
-      setError('新しいパスワードを入力してください。');
+      setError(ERROR_MESSAGES.invalidInput);
       return;
     }
     setSaving(true);
@@ -69,8 +70,8 @@ export default function MyPage() {
       setNewPassword('');
       setConfirmPassword('');
       setPasswordModalOpen(false);
-    } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : '変更に失敗しました。');
+    } catch {
+      setError(ERROR_MESSAGES.change);
     }
     setSaving(false);
   };

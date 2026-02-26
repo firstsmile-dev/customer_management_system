@@ -106,8 +106,7 @@ export default function CustomerDetailModal({ customerId, onClose, onSaved }: Cu
         ...profile,
       });
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.detail || err.message : 'Failed to save profile';
-      setError(String(msg));
+      setError('登録に失敗しました。もう一度お試しください。');
       setSaving(false);
       return;
     }
@@ -119,8 +118,7 @@ export default function CustomerDetailModal({ customerId, onClose, onSaved }: Cu
         monthly_drinking_budget: parseInt(detail.monthly_drinking_budget, 10) || 0,
       });
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.detail || err.message : 'Failed to save detail';
-      setError(String(msg));
+      setError('登録に失敗しました。もう一度お試しください。');
       setSaving(false);
       return;
     }
@@ -130,8 +128,7 @@ export default function CustomerDetailModal({ customerId, onClose, onSaved }: Cu
         ...preference,
       });
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.detail || err.message : 'Failed to save preferences';
-      setError(String(msg));
+      setError('登録に失敗しました。もう一度お試しください。');
       setSaving(false);
       return;
     }

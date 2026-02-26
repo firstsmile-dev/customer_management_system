@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { Store, StoreFormData } from '../types/customer';
 import { STORE_TYPES } from '../types/customer';
 
@@ -95,7 +96,7 @@ export default function StoreList() {
       setCreateOpen(false);
       setCreateForm(null);
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : '登録に失敗しました。');
+      setError(ERROR_MESSAGES.create);
     }
     setSaving(false);
   };
@@ -111,7 +112,7 @@ export default function StoreList() {
       setEditId(null);
       setEditForm(null);
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : '更新に失敗しました。');
+      setError(ERROR_MESSAGES.update);
     }
     setSaving(false);
   };
@@ -124,7 +125,7 @@ export default function StoreList() {
       setDeleteConfirmId(null);
       if (viewId === id) setViewId(null);
     } catch {
-      setError('削除に失敗しました。');
+      setError(ERROR_MESSAGES.delete);
     }
   };
 
@@ -164,14 +165,14 @@ export default function StoreList() {
           <p className="mt-8 text-gray-500">読み込み中…</p>
         ) : (
           <div className="mt-6 overflow-x-auto rounded-xl border border-gray-100 bg-white/90 shadow-sm">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-max text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80">
-                  <th className="px-4 py-3 font-medium text-gray-700">店舗名</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">種別</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">住所</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">有効</th>
-                  <th className="px-4 py-3 font-medium text-gray-700 text-right">操作</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">店舗名</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">種別</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">住所</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">有効</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 text-right whitespace-nowrap">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -180,11 +181,11 @@ export default function StoreList() {
                 ) : (
                   stores.map((s) => (
                     <tr key={s.id} className="border-b border-gray-50 hover:bg-sky-50/50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{s.store_type}</td>
-                      <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={s.address}>{s.address || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600">{s.is_active ? '有効' : '無効'}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{s.name}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.store_type}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 max-w-[200px] truncate" title={s.address}>{s.address || '—'}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.is_active ? '有効' : '無効'}</td>
+                      <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                           <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => setViewId(s.id)}><IconView />表示</button>
                           <button type="button" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 text-xs sm:text-sm" onClick={() => openEdit(s)}><IconEdit />編集</button>

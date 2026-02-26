@@ -6,6 +6,7 @@ import type {
   StaffMember,
   PaymentMethod,
 } from '../types/visitRecord';
+import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { Customer } from '../types/customer';
 import type { User } from '../types/user';
 import { PAYMENT_METHODS } from '../types/visitRecord';
@@ -171,7 +172,7 @@ export default function VisitRecordList() {
       setCreateOpen(false);
       setCreateForm(null);
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : 'Failed to create.');
+      setError(ERROR_MESSAGES.create);
     }
     setSaving(false);
   };
@@ -193,7 +194,7 @@ export default function VisitRecordList() {
       setEditId(null);
       setEditForm(null);
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : 'Failed to update.');
+      setError(ERROR_MESSAGES.update);
     }
     setSaving(false);
   };
@@ -206,7 +207,7 @@ export default function VisitRecordList() {
       setDeleteConfirmId(null);
       if (viewId === id) setViewId(null);
     } catch {
-      setError('Failed to delete.');
+      setError(ERROR_MESSAGES.delete);
     }
   };
 
@@ -243,16 +244,16 @@ export default function VisitRecordList() {
           <p className="mt-8 text-gray-500">読み込み中…</p>
         ) : (
           <div className="mt-6 overflow-x-auto rounded-xl border border-gray-100 bg-white/90 shadow-sm">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-max text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80">
-                  <th className="px-4 py-3 font-medium text-gray-700">お客様</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">来店日</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">利用額</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">支払方法</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">入店</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">退店</th>
-                  <th className="px-4 py-3 font-medium text-gray-700 text-right">操作</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">お客様</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">来店日</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">利用額</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">支払方法</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">入店</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">退店</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 text-right whitespace-nowrap">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -261,13 +262,13 @@ export default function VisitRecordList() {
                 ) : (
                   records.map((r) => (
                     <tr key={r.id} className="border-b border-gray-50 hover:bg-sky-50/50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{customerName(r.customer)}</td>
-                      <td className="px-4 py-3 text-gray-600">{formatDate(r.visit_date)}</td>
-                      <td className="px-4 py-3 text-gray-600">{r.spending} 円</td>
-                      <td className="px-4 py-3 text-gray-600">{r.payment_method}</td>
-                      <td className="px-4 py-3 text-gray-600">{formatDateTime(r.entry_time)}</td>
-                      <td className="px-4 py-3 text-gray-600">{formatDateTime(r.exit_time)}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{customerName(r.customer)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(r.visit_date)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{r.spending} 円</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{r.payment_method}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDateTime(r.entry_time)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDateTime(r.exit_time)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                           <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => setViewId(r.id)}><IconView />表示</button>
                           <button type="button" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 text-xs sm:text-sm" onClick={() => openEdit(r)}><IconEdit />編集</button>

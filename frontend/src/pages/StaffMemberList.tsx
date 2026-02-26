@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { StaffMember, StaffMemberFormData } from '../types/staffMember';
 import type { Store } from '../types/customer';
 import type { User } from '../types/user';
@@ -153,7 +154,7 @@ export default function StaffMemberList() {
       setCreateOpen(false);
       setCreateForm(null);
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : '登録に失敗しました。');
+      setError(ERROR_MESSAGES.create);
     }
     setSaving(false);
   };
@@ -174,7 +175,7 @@ export default function StaffMemberList() {
       setEditId(null);
       setEditForm(null);
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : '更新に失敗しました。');
+      setError(ERROR_MESSAGES.update);
     }
     setSaving(false);
   };
@@ -187,7 +188,7 @@ export default function StaffMemberList() {
       setDeleteConfirmId(null);
       if (viewId === id) setViewId(null);
     } catch {
-      setError('削除に失敗しました。');
+      setError(ERROR_MESSAGES.delete);
     }
   };
 
@@ -218,17 +219,17 @@ export default function StaffMemberList() {
           <p className="mt-8 text-gray-500">読み込み中…</p>
         ) : (
           <div className="mt-6 overflow-x-auto rounded-xl border border-gray-100 bg-white/90 shadow-sm">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-max text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80">
-                  <th className="px-4 py-3 font-medium text-gray-700">ユーザー</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">店舗</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">時給（円）</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">歩合率</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">出勤中</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">出勤</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">退勤</th>
-                  <th className="px-4 py-3 font-medium text-gray-700 text-right">操作</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">ユーザー</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">店舗</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">時給（円）</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">歩合率</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">出勤中</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">出勤</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">退勤</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 text-right whitespace-nowrap">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -237,14 +238,14 @@ export default function StaffMemberList() {
                 ) : (
                   members.map((m) => (
                     <tr key={m.id} className="border-b border-gray-50 hover:bg-sky-50/50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{userDisplayName(m.user)}</td>
-                      <td className="px-4 py-3 text-gray-600">{storeName(m.store)}</td>
-                      <td className="px-4 py-3 text-gray-600">{m.hourly_wage}</td>
-                      <td className="px-4 py-3 text-gray-600">{m.commission_rate}</td>
-                      <td className="px-4 py-3 text-gray-600">{m.is_on_duty ? 'はい' : 'いいえ'}</td>
-                      <td className="px-4 py-3 text-gray-600">{formatDateTime(m.check_in)}</td>
-                      <td className="px-4 py-3 text-gray-600">{formatDateTime(m.check_out)}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{userDisplayName(m.user)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{storeName(m.store)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{m.hourly_wage}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{m.commission_rate}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{m.is_on_duty ? 'はい' : 'いいえ'}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDateTime(m.check_in)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDateTime(m.check_out)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                           <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => setViewId(m.id)}><IconView />表示</button>
                           <button type="button" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 text-xs sm:text-sm" onClick={() => openEdit(m)}><IconEdit />編集</button>

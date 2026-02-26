@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import type { DailySummary } from '../types/dailySummary';
+import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { Store, Customer } from '../types/customer';
 import type { VisitRecord } from '../types/visitRecord';
 
@@ -179,7 +180,7 @@ export default function DailyExpenseEntry() {
       setSuccess(true);
       closeModal();
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : '送信に失敗しました。');
+      setError(ERROR_MESSAGES.create);
     }
     setSaving(false);
   };
@@ -191,7 +192,7 @@ export default function DailyExpenseEntry() {
       fetchSummaries();
       setDeleteConfirmId(null);
     } catch {
-      setError('削除に失敗しました。');
+      setError(ERROR_MESSAGES.delete);
     }
   };
 
@@ -233,17 +234,17 @@ export default function DailyExpenseEntry() {
               <h2 className="text-sm font-medium text-gray-700">直近の日次サマリー（経費・人件費）</h2>
               <button type="button" onClick={openModal} className="text-sm text-sky-600 hover:text-sky-700 font-medium">+ 経費を登録</button>
             </div>
-            <div className="rounded-xl border border-gray-100 bg-white/90 shadow-sm overflow-hidden">
-              <table className="w-full text-left text-sm">
+            <div className="rounded-xl border border-gray-100 bg-white/90 shadow-sm overflow-x-auto">
+              <table className="w-full min-w-max text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/80">
-                    <th className="px-4 py-3 font-medium text-gray-700">店舗</th>
-                    <th className="px-4 py-3 font-medium text-gray-700">対象日</th>
-                    <th className="px-4 py-3 font-medium text-gray-700">売上（円）</th>
-                    <th className="px-4 py-3 font-medium text-gray-700">経費（円）</th>
-                    <th className="px-4 py-3 font-medium text-gray-700">人件費（円）</th>
-                    <th className="px-4 py-3 font-medium text-gray-700">備考</th>
-                    <th className="px-4 py-3 font-medium text-gray-700 text-right">操作</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">店舗</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">対象日</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">売上（円）</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">経費（円）</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">人件費（円）</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">備考</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 text-right whitespace-nowrap">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -252,13 +253,13 @@ export default function DailyExpenseEntry() {
                   ) : (
                     recentSummaries.map((s) => (
                       <tr key={s.id} className="border-b border-gray-50 hover:bg-sky-50/30">
-                        <td className="px-4 py-3 text-gray-900">{storeName(s.store)}</td>
-                        <td className="px-4 py-3 text-gray-600">{s.report_date}</td>
-                        <td className="px-4 py-3 text-gray-600">{s.total_sales}</td>
-                        <td className="px-4 py-3 text-gray-600">{s.total_expenses}</td>
-                        <td className="px-4 py-3 text-gray-600">{s.labor_costs}</td>
-                        <td className="px-4 py-3 text-gray-500 max-w-[240px] truncate" title={s.notes || undefined}>{s.notes || '—'}</td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-2 sm:px-4 py-3 text-gray-900 whitespace-nowrap">{storeName(s.store)}</td>
+                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.report_date}</td>
+                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.total_sales}</td>
+                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.total_expenses}</td>
+                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.labor_costs}</td>
+                        <td className="px-2 sm:px-4 py-3 text-gray-500 max-w-[240px] truncate" title={s.notes || undefined}>{s.notes || '—'}</td>
+                        <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                           <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                             <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => openEdit(s)}><IconEdit />編集</button>
                             {deleteConfirmId === s.id ? (

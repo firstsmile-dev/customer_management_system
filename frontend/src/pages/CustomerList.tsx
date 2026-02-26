@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import CustomerDetailViewModal from '../components/CustomerDetailViewModal';
+import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { Customer, Store, CustomerFormData } from '../types/customer';
 
 const API = '/api';
@@ -143,7 +144,7 @@ export default function CustomerList() {
       setEditId(null);
       setEditForm(null);
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : 'Failed to update.');
+      setError(ERROR_MESSAGES.update);
     }
     setSaving(false);
   };
@@ -156,7 +157,7 @@ export default function CustomerList() {
       setDeleteConfirmId(null);
       if (viewId === id) setViewId(null);
     } catch {
-      setError('Failed to delete.');
+      setError(ERROR_MESSAGES.delete);
     }
   };
 
@@ -239,14 +240,14 @@ export default function CustomerList() {
               </span>
             </div>
             <div className="mt-3 overflow-x-auto rounded-xl border border-gray-100 bg-white/90 shadow-soft">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-max text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80">
-                  <th className="px-4 py-3 font-medium text-gray-700">名前</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">店舗</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">初回来店</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">累計利用額</th>
-                  <th className="px-4 py-3 font-medium text-gray-700 text-right">操作</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">名前</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">店舗</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">初回来店</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">累計利用額</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 text-right whitespace-nowrap">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -255,11 +256,11 @@ export default function CustomerList() {
                 ) : (
                   filteredCustomers.map((c) => (
                     <tr key={c.id} className="border-b border-gray-50 hover:bg-sky-50/50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{storeName(c.store)}</td>
-                      <td className="px-4 py-3 text-gray-600">{c.first_visit}</td>
-                      <td className="px-4 py-3 text-gray-600">{c.total_spend} 円</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{c.name}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{storeName(c.store)}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{c.first_visit}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{c.total_spend} 円</td>
+                      <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                           <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => setViewId(c.id)}><IconView />表示</button>
                           <button type="button" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 text-xs sm:text-sm" onClick={() => openEdit(c)}><IconEdit />編集</button>

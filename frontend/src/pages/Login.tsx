@@ -25,7 +25,7 @@ export default function Login() {
     if (result.ok) {
       navigate(next, { replace: true });
     } else {
-      setError(result.error ?? 'ログインに失敗しました。');
+      setError(result.error ?? 'ログインに失敗しました。メールアドレスとパスワードをご確認ください。');
     }
   };
 

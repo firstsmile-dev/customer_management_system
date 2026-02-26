@@ -89,11 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await axios.post<LoginResponse>(`${API}/auth/login/`, { email, password });
       loginWithResponse(res.data);
       return { ok: true };
-    } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data?.detail ?? err.message)
-        : 'ログインに失敗しました。';
-      return { ok: false, error: String(msg) };
+    } catch {
+      return { ok: false, error: 'ログインに失敗しました。メールアドレスとパスワードをご確認ください。' };
     }
   }, []);
 

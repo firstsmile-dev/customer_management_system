@@ -138,13 +138,13 @@ export default function DailySalesEntry() {
 
             <section className="mt-4">
               <h2 className="text-sm font-medium text-gray-700 mb-3">売上一覧（来店記録の利用額合計）</h2>
-              <div className="rounded-xl border border-gray-100 bg-white/90 shadow-sm overflow-hidden">
-                <table className="w-full text-left text-sm">
+              <div className="rounded-xl border border-gray-100 bg-white/90 shadow-sm overflow-x-auto">
+                <table className="w-full min-w-max text-left text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50/80">
-                      <th className="px-4 py-3 font-medium text-gray-700">店舗</th>
-                      <th className="px-4 py-3 font-medium text-gray-700">対象日</th>
-                      <th className="px-4 py-3 font-medium text-gray-700">売上（円）</th>
+                      <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">店舗</th>
+                      <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">対象日</th>
+                      <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">売上（円）</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -157,9 +157,9 @@ export default function DailySalesEntry() {
                     ) : (
                       filtered.map((row, i) => (
                         <tr key={`${row.store}-${row.report_date}-${i}`} className="border-b border-gray-50 hover:bg-sky-50/30">
-                          <td className="px-4 py-3 font-medium text-gray-900">{storeName(row.store)}</td>
-                          <td className="px-4 py-3 text-gray-600">{row.report_date}</td>
-                          <td className="px-4 py-3 text-gray-600">{row.total_sales.toLocaleString()}</td>
+                          <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{storeName(row.store)}</td>
+                          <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{row.report_date}</td>
+                          <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{row.total_sales.toLocaleString()}</td>
                         </tr>
                       ))
                     )}

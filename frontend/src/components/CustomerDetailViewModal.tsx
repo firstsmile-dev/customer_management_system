@@ -160,7 +160,7 @@ export default function CustomerDetailViewModal({
             : initialPreference
         );
       } catch {
-        setError('Failed to load detailed information.');
+        setError('詳細情報の読み込みに失敗しました。もう一度お試しください。');
       }
       setLoading(false);
     };
@@ -203,7 +203,7 @@ export default function CustomerDetailViewModal({
       setMode('view');
       onSaved?.();
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : 'Failed to save.');
+      setError('保存に失敗しました。もう一度お試しください。');
     }
     setSaving(false);
   };
@@ -219,7 +219,7 @@ export default function CustomerDetailViewModal({
       onDeleted?.();
       onClose();
     } catch {
-      setError('Failed to delete.');
+      setError('削除に失敗しました。もう一度お試しください。');
     }
     setDeleting(false);
     setConfirmDelete(false);

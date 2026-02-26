@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import type { Store } from '../types/customer';
+import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { LoginResponse } from '../types/auth';
 
 const API = '/api';
@@ -37,7 +38,7 @@ export default function Register() {
     e.preventDefault();
     setError(null);
     if (storeRequired && !storeId.trim()) {
-      setError('店舗を選択してください。');
+      setError(ERROR_MESSAGES.invalidInput);
       return;
     }
     setSubmitting(true);
@@ -52,10 +53,7 @@ export default function Register() {
       loginWithResponse(res.data);
       navigate('/', { replace: true });
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data?.detail ?? err.message)
-        : '登録に失敗しました。';
-      setError(String(msg));
+      setError(ERROR_MESSAGES.create);
     } finally {
       setSubmitting(false);
     }

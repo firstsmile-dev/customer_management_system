@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import CustomerDetailModal from '../components/CustomerDetailModal';
+import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { Store, CustomerFormData } from '../types/customer';
 
 const API = '/api';
@@ -52,12 +53,7 @@ export default function CustomerRegistration() {
       setCreatedCustomerId(res.data.id);
       setSuccess(true);
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data && typeof err.response.data === 'object' && 'detail' in err.response.data
-          ? String((err.response.data as { detail?: unknown }).detail)
-          : err.message)
-        : 'Failed to create customer';
-      setError(String(msg));
+      setError(ERROR_MESSAGES.create);
     }
     setSubmitting(false);
   };
