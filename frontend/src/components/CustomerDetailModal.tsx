@@ -5,8 +5,7 @@ import type {
   CustomerDetailFormData,
   CustomerPreferenceFormData,
 } from '../types/customer';
-
-const API = '/api';
+import { API } from '../config';
 
 const initialProfile: CustomerProfileFormData = {
   birthday: '',

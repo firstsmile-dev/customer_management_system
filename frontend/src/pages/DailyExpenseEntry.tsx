@@ -4,8 +4,7 @@ import type { DailySummary } from '../types/dailySummary';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { Store, Customer } from '../types/customer';
 import type { VisitRecord } from '../types/visitRecord';
-
-const API = '/api';
+import { API } from '../config';
 
 const inputClass =
   'mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm focus:border-sky-300 focus:ring-1 focus:ring-sky-300 text-sm';

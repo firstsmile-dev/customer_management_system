@@ -3,8 +3,7 @@ import axios from 'axios';
 import CustomerDetailModal from '../components/CustomerDetailModal';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { Store, CustomerFormData } from '../types/customer';
-
-const API = '/api';
+import { API } from '../config';
 
 const initialForm: CustomerFormData = {
   store: '',

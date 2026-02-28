@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import type { Store, Customer } from '../types/customer';
 import type { VisitRecord } from '../types/visitRecord';
-
-const API = '/api';
+import { API } from '../config';
 
 const labelClass = 'block text-sm font-medium text-gray-700';
 

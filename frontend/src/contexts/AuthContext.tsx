@@ -1,8 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import type { AuthUser, LoginResponse } from '../types/auth';
-
-const API = '/api';
+import { API } from '../config';
 const STORAGE_ACCESS = 'cms_access';
 const STORAGE_REFRESH = 'cms_refresh';
 const STORAGE_USER = 'cms_user';

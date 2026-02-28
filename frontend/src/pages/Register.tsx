@@ -5,8 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Store } from '../types/customer';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { LoginResponse } from '../types/auth';
-
-const API = '/api';
+import { API } from '../config';
 const inputClass =
   'mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 shadow-sm focus:border-sakura-300 focus:ring-1 focus:ring-sakura-300 text-sm';
 const labelClass = 'block text-sm font-medium text-gray-700';

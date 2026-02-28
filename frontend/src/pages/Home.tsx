@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API } from '../config';
 
 export default function Home() {
   const [backendStatus, setBackendStatus] = useState<'checking' | 'ok' | 'error'>('checking');
 
   useEffect(() => {
     axios
-      .get('/api/')
+      .get(`${API}/`)
       .then(() => setBackendStatus('ok'))
       .catch(() => setBackendStatus('error'));
   }, []);

@@ -4,8 +4,7 @@ import axios from 'axios';
 import CustomerDetailViewModal from '../components/CustomerDetailViewModal';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { Customer, Store, CustomerFormData } from '../types/customer';
-
-const API = '/api';
+import { API } from '../config';
 
 const inputClass =
   'mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm focus:border-sky-300 focus:ring-1 focus:ring-sky-300 text-sm';
