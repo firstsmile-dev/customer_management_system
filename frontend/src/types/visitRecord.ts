@@ -14,7 +14,7 @@ export interface VisitRecord {
   memo: string;
   unpaid_amount: string;
   received_amount: number;
-  unpaid_date: string;
+  unpaid_date: string | null;
   receipt: boolean;
 }
 

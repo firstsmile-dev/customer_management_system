@@ -89,10 +89,10 @@ function toFormData(r: VisitRecord): VisitRecordFormData {
     exit_time: r.exit_time.slice(0, 16),
     accompanied: r.accompanied,
     companions: r.companions,
-    memo: r.memo,
+    memo: r.memo ?? '',
     unpaid_amount: r.unpaid_amount,
     received_amount: String(r.received_amount),
-    unpaid_date: r.unpaid_date,
+    unpaid_date: r.unpaid_date ?? '',
     receipt: r.receipt,
   };
 }
@@ -106,6 +106,13 @@ function formatDateTime(s: string) {
 function formatDate(s: string) {
   if (!s) return '—';
   return s;
+}
+
+/** Format a numeric amount for display, rounded to 1 decimal place. */
+function formatAmount(value: string | number): string {
+  const n = typeof value === 'string' ? parseFloat(value) : value;
+  if (Number.isNaN(n)) return '—';
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
 export default function VisitRecordList() {
@@ -154,6 +161,7 @@ export default function VisitRecordList() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('createForm', createForm);
     if (!createForm) return;
     setSaving(true);
     setError(null);
@@ -165,6 +173,8 @@ export default function VisitRecordList() {
         received_amount: Number(createForm.received_amount),
         entry_time: createForm.entry_time ? new Date(createForm.entry_time).toISOString() : null,
         exit_time: createForm.exit_time ? new Date(createForm.exit_time).toISOString() : null,
+        memo: createForm.memo || '',
+        unpaid_date: createForm.unpaid_date || null,
       };
       await axios.post(`${API}/visit-records/`, payload);
       fetchRecords();
@@ -187,6 +197,8 @@ export default function VisitRecordList() {
         received_amount: Number(editForm.received_amount),
         entry_time: editForm.entry_time ? new Date(editForm.entry_time).toISOString() : null,
         exit_time: editForm.exit_time ? new Date(editForm.exit_time).toISOString() : null,
+        memo: editForm.memo || '',
+        unpaid_date: editForm.unpaid_date || null,
       };
       await axios.patch(`${API}/visit-records/${editId}/`, payload);
       fetchRecords();
@@ -263,7 +275,7 @@ export default function VisitRecordList() {
                     <tr key={r.id} className="border-b border-gray-50 hover:bg-sky-50/50">
                       <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{customerName(r.customer)}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(r.visit_date)}</td>
-                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{r.spending} 円</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatAmount(r.spending)} 円</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{r.payment_method}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDateTime(r.entry_time)}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDateTime(r.exit_time)}</td>
@@ -301,16 +313,16 @@ export default function VisitRecordList() {
                   <div><dt className="text-gray-500">お客様</dt><dd className="font-medium">{customerName(r.customer)}</dd></div>
                   <div><dt className="text-gray-500">担当</dt><dd>{castLabel(r.cast)}</dd></div>
                   <div><dt className="text-gray-500">来店日</dt><dd>{formatDate(r.visit_date)}</dd></div>
-                  <div><dt className="text-gray-500">利用額</dt><dd>{r.spending} 円</dd></div>
+                  <div><dt className="text-gray-500">利用額</dt><dd>{formatAmount(r.spending)} 円</dd></div>
                   <div><dt className="text-gray-500">支払方法</dt><dd>{r.payment_method}</dd></div>
                   <div><dt className="text-gray-500">入店</dt><dd>{formatDateTime(r.entry_time)}</dd></div>
                   <div><dt className="text-gray-500">退店</dt><dd>{formatDateTime(r.exit_time)}</dd></div>
                   <div><dt className="text-gray-500">同伴</dt><dd>{r.accompanied ? 'はい' : 'いいえ'}</dd></div>
                   {r.companions && <div><dt className="text-gray-500">同伴者</dt><dd>{r.companions}</dd></div>}
                   {r.memo && <div><dt className="text-gray-500">メモ</dt><dd className="whitespace-pre-wrap">{r.memo}</dd></div>}
-                  <div><dt className="text-gray-500">未払額</dt><dd>{r.unpaid_amount} 円</dd></div>
-                  <div><dt className="text-gray-500">受取額</dt><dd>{r.received_amount} 円</dd></div>
-                  <div><dt className="text-gray-500">未払日</dt><dd>{formatDate(r.unpaid_date)}</dd></div>
+                  <div><dt className="text-gray-500">未払額</dt><dd>{formatAmount(r.unpaid_amount)} 円</dd></div>
+                  <div><dt className="text-gray-500">受取額</dt><dd>{formatAmount(r.received_amount)} 円</dd></div>
+                  <div><dt className="text-gray-500">未払日</dt><dd>{formatDate(r.unpaid_date ?? '')}</dd></div>
                   <div><dt className="text-gray-500">領収書</dt><dd>{r.receipt ? 'あり' : 'なし'}</dd></div>
                 </dl>
                 <div className="mt-4 flex gap-2">
@@ -411,7 +423,7 @@ function VisitRecordForm({ form, setForm, customers, staff, users, onSubmit, sav
         </div>
         <div>
           <label className={labelClass}>利用額（円） *</label>
-          <input type="number" step="0.01" min="0" value={form.spending} onChange={(e) => update({ spending: e.target.value })} className={inputClass} required />
+          <input type="number" step="0" min="0" value={form.spending} onChange={(e) => update({ spending: e.target.value })} className={inputClass} required />
         </div>
       </div>
       <div>
@@ -439,13 +451,13 @@ function VisitRecordForm({ form, setForm, customers, staff, users, onSubmit, sav
         <input type="text" value={form.companions} onChange={(e) => update({ companions: e.target.value })} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>メモ</label>
+        <label className={labelClass}>メモ（任意）</label>
         <textarea value={form.memo} onChange={(e) => update({ memo: e.target.value })} className={inputClass} rows={3} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>未払額（円）</label>
-          <input type="number" step="0.01" min="0" value={form.unpaid_amount} onChange={(e) => update({ unpaid_amount: e.target.value })} className={inputClass} />
+          <input type="number" step="0" min="0" value={form.unpaid_amount} onChange={(e) => update({ unpaid_amount: e.target.value })} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>受取額（円）</label>
@@ -454,7 +466,7 @@ function VisitRecordForm({ form, setForm, customers, staff, users, onSubmit, sav
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>未払日</label>
+          <label className={labelClass}>未払日（任意）</label>
           <input type="date" value={form.unpaid_date} onChange={(e) => update({ unpaid_date: e.target.value })} className={inputClass} />
         </div>
         <div className="flex items-center gap-2 pt-8">

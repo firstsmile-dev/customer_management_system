@@ -176,7 +176,7 @@ class VisitRecord(models.Model):
         related_name="visit_records",
     )
     visit_date = models.DateField()
-    spending = models.DecimalField(max_digits=8, decimal_places=2)
+    spending = models.BigIntegerField()
     payment_method = models.CharField(
         max_length=255,
         choices=PaymentMethod.choices,
@@ -185,10 +185,10 @@ class VisitRecord(models.Model):
     exit_time = models.DateTimeField()
     accompanied = models.BooleanField()
     companions = models.CharField(max_length=255)
-    memo = models.TextField()
-    unpaid_amount = models.DecimalField(max_digits=8, decimal_places=2)
+    memo = models.TextField(blank=True, default="")
+    unpaid_amount = models.BigIntegerField()
     received_amount = models.BigIntegerField()
-    unpaid_date = models.DateField(db_column="unpaid date")
+    unpaid_date = models.DateField(db_column="unpaid date", null=True, blank=True)
     receipt = models.BooleanField()
 
     class Meta:
