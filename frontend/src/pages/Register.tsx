@@ -6,9 +6,16 @@ import type { Store } from '../types/customer';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
 import type { LoginResponse } from '../types/auth';
 import { API } from '../config';
+
 const inputClass =
   'mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 shadow-sm focus:border-sakura-300 focus:ring-1 focus:ring-sakura-300 text-sm';
 const labelClass = 'block text-sm font-medium text-gray-700';
+
+interface RegistrationMode {
+  has_admin: boolean;
+  registration_role: 'Admin' | 'Cast';
+  stores?: Store[];
+}
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -16,7 +23,8 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [storeId, setStoreId] = useState('');
   const [stores, setStores] = useState<Store[]>([]);
-  const [storesLoading, setStoresLoading] = useState(true);
+  const [registrationMode, setRegistrationMode] = useState<RegistrationMode | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { loginWithResponse } = useAuth();
@@ -24,14 +32,24 @@ export default function Register() {
 
   useEffect(() => {
     axios
-      .get<Store[]>(`${API}/stores/`)
-      .then((res) => setStores(res.data))
-      .catch(() => setStores([]))
-      .finally(() => setStoresLoading(false));
+      .get<RegistrationMode>(`${API}/auth/registration-mode/`)
+      .then((r) => {
+        const data = r.data ?? { has_admin: false, registration_role: 'Admin' as const, stores: [] };
+        setRegistrationMode(data);
+        setStores(data.stores ?? []);
+      })
+      .catch(() => {
+        setRegistrationMode({ has_admin: false, registration_role: 'Admin', stores: [] });
+        setStores([]);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const noStores = !storesLoading && stores.length === 0;
-  const storeRequired = !noStores;
+  const hasAdmin = registrationMode?.has_admin ?? false;
+  const registerAsCast = hasAdmin;
+  const storeRequired = registerAsCast;
+  const showStoreField = registerAsCast && stores.length > 0;
+  const cannotRegisterCast = registerAsCast && stores.length === 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,14 +81,20 @@ export default function Register() {
       <div className="w-full max-w-sm rounded-2xl bg-white shadow-card border border-gray-100 p-8">
         <h1 className="text-xl font-medium text-gray-800 text-center">新規登録</h1>
         <p className="mt-1 text-sm text-gray-500 text-center">
-          初回は管理者として登録されます。既に管理者がいる場合はキャストとして登録されます。
+          {registerAsCast
+            ? 'キャストとして登録します。店舗を選択してください。'
+            : '管理者として登録します。店舗はログイン後に登録できます。'}
         </p>
 
-        {storesLoading ? (
-          <p className="mt-6 text-sm text-gray-500 text-center">店舗を読み込み中…</p>
+        {loading ? (
+          <p className="mt-6 text-sm text-gray-500 text-center">読み込み中…</p>
+        ) : cannotRegisterCast ? (
+          <div className="mt-6 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
+            既に管理者が登録されています。キャストとして登録するには、先に管理者が店舗を作成する必要があります。
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {noStores && (
+            {!registerAsCast && (
               <div className="rounded-lg bg-sky-50 border border-sky-100 px-4 py-3 text-sm text-sky-800">
                 管理者として登録します。店舗はログイン後に登録できます。
               </div>
@@ -123,7 +147,7 @@ export default function Register() {
                 minLength={1}
               />
             </div>
-            {!noStores && (
+            {showStoreField && (
               <div>
                 <label htmlFor="reg-store" className={labelClass}>
                   店舗 *

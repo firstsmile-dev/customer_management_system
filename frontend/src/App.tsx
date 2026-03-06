@@ -14,6 +14,7 @@ import StoreList from './pages/StoreList';
 import UserList from './pages/UserList';
 import StaffMemberList from './pages/StaffMemberList';
 import MyPage from './pages/MyPage';
+import PerformanceTargetList from './pages/PerformanceTargetList';
 
 const HamburgerIcon = ({ open }: { open: boolean }) => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -34,6 +35,7 @@ function Nav() {
   const navLinks: { to: string; label: string }[] = [
     { to: '/', label: 'ホーム' },
     { to: '/my-page', label: 'マイページ' },
+    { to: '/performance-targets', label: '売上目標' },
     { to: '/customers', label: 'お客様一覧' },
     { to: '/customers/register', label: 'お客様登録' },
     { to: '/visit-records', label: '来店記録' },
@@ -49,7 +51,7 @@ function Nav() {
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-card">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           {/* Desktop: nav links (hidden below 768px) */}
           <div className="hidden md:flex items-center gap-6 flex-1">
@@ -161,6 +163,7 @@ function AppContent() {
         <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
         <Route path="/staff-members" element={<ProtectedRoute><StaffMemberList /></ProtectedRoute>} />
         <Route path="/my-page" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
+        <Route path="/performance-targets" element={<ProtectedRoute><PerformanceTargetList /></ProtectedRoute>} />
       </Routes>
     </div>
   );

@@ -349,19 +349,105 @@ class CustomerPreferenceViewSet(viewsets.ModelViewSet):
         return qs.filter(customer__store_id=store_id)
 
 
+def _get_request_user_id(request):
+    """Return the CmsUser pk for the authenticated request, or None."""
+    cms_user = _get_request_cms_user(request)
+    return cms_user.id if cms_user else None
+
+
+def _get_request_user_role(request):
+    """Return the role of the authenticated user (e.g. 'Cast', 'Staff', 'Manager', 'Admin'), or None."""
+    cms_user = _get_request_cms_user(request)
+    return getattr(cms_user, "role", None) if cms_user else None
+
+
 class PerformanceTargetViewSet(viewsets.ModelViewSet):
-    """CRUD for the `performance_targets` table. Admin: all. Others: only for staff in their store."""
+    """
+    CRUD for the `performance_targets` table.
+    - Cast: only own targets (staff belongs to current user); create/edit/delete only own.
+    - Staff, Manager, Admin: list and CRUD all targets for stores within their authority
+      (Staff/Manager: their store only; Admin: all stores).
+    """
     queryset = PerformanceTarget.objects.all()
     serializer_class = PerformanceTargetSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin(self.request):
+        role = _get_request_user_role(self.request)
+        if role == "Admin":
             return qs
+        if role == "Cast":
+            user_id = _get_request_user_id(self.request)
+            if user_id is None:
+                return qs.none()
+            return qs.filter(staff__user_id=user_id)
+        # Staff or Manager: targets for staff in their store only
         store_id = _get_request_user_store_id(self.request)
         if store_id is None:
             return qs.none()
         return qs.filter(staff__store_id=store_id)
+
+    def _staff_belongs_to_request_user(self, staff_id):
+        """True if the given staff_id is a StaffMember for the current user (Cast: own only)."""
+        user_id = _get_request_user_id(self.request)
+        if user_id is None:
+            return False
+        try:
+            sm = StaffMember.objects.get(pk=staff_id)
+            return str(sm.user_id) == str(user_id)
+        except StaffMember.DoesNotExist:
+            return False
+
+    def _staff_in_request_user_store(self, staff_id):
+        """True if the given staff_id is a StaffMember in the current user's store (Staff/Manager)."""
+        store_id = _get_request_user_store_id(self.request)
+        if store_id is None:
+            return False
+        try:
+            sm = StaffMember.objects.get(pk=staff_id)
+            return str(sm.store_id) == str(store_id)
+        except StaffMember.DoesNotExist:
+            return False
+
+    def _validate_staff_for_create_update(self, staff_id):
+        """Return None if staff_id is allowed for current user; else return 400/403 Response."""
+        if not staff_id:
+            return Response(
+                {"detail": "staff is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        role = _get_request_user_role(self.request)
+        if role == "Cast":
+            if not self._staff_belongs_to_request_user(staff_id):
+                return Response(
+                    {"detail": "Cast can only create or edit performance targets for themselves."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        elif role in ("Staff", "Manager"):
+            if not self._staff_in_request_user_store(staff_id):
+                return Response(
+                    {"detail": "You can only assign targets to staff in your store."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        # Admin: any staff allowed
+        return None
+
+    def create(self, request, *args, **kwargs):
+        if not _is_admin(request):
+            staff_id = request.data.get("staff")
+            err = self._validate_staff_for_create_update(staff_id)
+            if err is not None:
+                return err
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        if not _is_admin(request):
+            staff_id = request.data.get("staff")
+            if staff_id is not None:
+                err = self._validate_staff_for_create_update(staff_id)
+                if err is not None:
+                    return err
+        return super().update(request, *args, **kwargs)
 
 
 class DailySummaryViewSet(viewsets.ModelViewSet):
@@ -439,13 +525,31 @@ def _login_response(user):
     })
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def registration_mode(request):
+    """
+    Public endpoint. Returns whether an admin exists so the frontend can show the correct registration flow.
+    When has_admin is true, new users must register as Cast with a store. Returns store list for the dropdown.
+    """
+    from .serializers import StoreSerializer
+
+    has_admin = CmsUser.objects.filter(role=CmsUser.Role.ADMIN).exists()
+    stores = list(Store.objects.all()) if has_admin else []
+    return Response({
+        "has_admin": has_admin,
+        "registration_role": "Cast" if has_admin else "Admin",
+        "stores": StoreSerializer(stores, many=True).data,
+    })
+
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register(request):
     """
     Public registration. Body: { "username", "email", "password", "store" (optional for first admin) }.
     - If no admin user exists: create user with role Admin; store is optional (can register with no store).
-    - Otherwise: create user with role Cast; store is required and at least one store must exist.
+    - If at least one admin exists: create user with role Cast; store is required and at least one store must exist.
     """
     email = (request.data.get("email") or "").strip()
     password = request.data.get("password")
