@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
+import { formatPrice } from '../utils/formatPrice';
 import { API } from '../config';
 import type { PerformanceTarget, PerformanceTargetFormData, TargetType } from '../types/performanceTarget';
 import { TARGET_TYPES } from '../types/performanceTarget';
@@ -36,11 +37,6 @@ const emptyTargetForm = (firstStaffId: string): PerformanceTargetFormData => ({
   target_date: todayISO(),
 });
 
-function formatAmount(value: string | number): string {
-  const n = typeof value === 'string' ? parseFloat(value) : value;
-  if (Number.isNaN(n)) return '—';
-  return Number.isInteger(n) ? String(n) : n.toFixed(1);
-}
 
 export default function MyPage() {
   const { user, updateStoredUser } = useAuth();
@@ -106,9 +102,11 @@ export default function MyPage() {
   };
 
   const openEditTarget = (t: PerformanceTarget) => {
+    const n = Number(t.target_amount);
+    const amount = Number.isNaN(n) ? '0' : String(Math.round(n));
     setTargetForm({
       staff: t.staff,
-      target_amount: t.target_amount,
+      target_amount: amount,
       target_type: t.target_type,
       target_date: t.target_date,
     });
@@ -122,11 +120,15 @@ export default function MyPage() {
     if (!targetForm) return;
     setTargetSaving(true);
     setTargetError(null);
+    const payload = {
+      ...targetForm,
+      target_amount: Math.round(Number(targetForm.target_amount)) || 0,
+    };
     try {
       if (targetEditId) {
-        await axios.patch(`${API}/performance-targets/${targetEditId}/`, targetForm);
+        await axios.patch(`${API}/performance-targets/${targetEditId}/`, payload);
       } else {
-        await axios.post(`${API}/performance-targets/`, targetForm);
+        await axios.post(`${API}/performance-targets/`, payload);
       }
       fetchTargets();
       setTargetModalOpen(false);
@@ -285,7 +287,7 @@ export default function MyPage() {
                           <td className="py-2 pr-4 text-gray-900 whitespace-nowrap">{staffLabel(t.staff)}</td>
                           <td className="py-2 pr-4 text-gray-600 whitespace-nowrap">{t.target_type === 'Daily' ? '日次' : '月次'}</td>
                           <td className="py-2 pr-4 text-gray-600 whitespace-nowrap">{t.target_date}</td>
-                          <td className="py-2 pr-4 text-gray-600 whitespace-nowrap">{formatAmount(t.target_amount)} 円</td>
+                          <td className="py-2 pr-4 text-gray-600 whitespace-nowrap">{formatPrice(t.target_amount)} 円</td>
                           <td className="py-2 text-right whitespace-nowrap">
                             <button type="button" className="text-sakura-600 hover:underline text-xs mr-2" onClick={() => openEditTarget(t)}>編集</button>
                             {targetDeleteId === t.id ? (
@@ -404,7 +406,7 @@ export default function MyPage() {
                 </div>
                 <div>
                   <label className={labelClass}>目標額（円） *</label>
-                  <input type="number" step="0.01" min="0" value={targetForm.target_amount} onChange={(e) => setTargetForm((f) => f ? { ...f, target_amount: e.target.value } : null)} className={inputClass} required />
+                  <input type="number" step="1" min="0" value={targetForm.target_amount} onChange={(e) => setTargetForm((f) => f ? { ...f, target_amount: e.target.value } : null)} className={inputClass} required />
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button type="submit" disabled={targetSaving} className="px-4 py-2 rounded-xl bg-sakura-400 text-white text-sm font-medium hover:bg-sakura-500 disabled:opacity-60">

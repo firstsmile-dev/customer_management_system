@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import type { DailySummary } from '../types/dailySummary';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
+import { formatPrice } from '../utils/formatPrice';
 import type { Store, Customer } from '../types/customer';
 import type { VisitRecord } from '../types/visitRecord';
 import { API } from '../config';
@@ -123,8 +124,10 @@ export default function DailyExpenseEntry() {
     setEditId(s.id);
     setStoreId(s.store);
     setReportDate(s.report_date);
-    setTotalExpenses(s.total_expenses ?? '');
-    setLaborCosts(s.labor_costs ?? '');
+    const exp = Number(s.total_expenses);
+    const labor = Number(s.labor_costs);
+    setTotalExpenses(Number.isNaN(exp) ? '' : String(Math.round(exp)));
+    setLaborCosts(Number.isNaN(labor) ? '' : String(Math.round(labor)));
     setNotes(s.notes ?? '');
     setModalOpen(true);
   };
@@ -140,17 +143,17 @@ export default function DailyExpenseEntry() {
     setSaving(true);
     setError(null);
     setSuccess(false);
-    const expenses = totalExpenses.trim() === '' ? '0' : totalExpenses;
-    const labor = laborCosts.trim() === '' ? '0' : laborCosts;
-    const totalSales = String(computedTotalSales);
+    const expenses = Math.round(Number(totalExpenses.trim() || 0));
+    const labor = Math.round(Number(laborCosts.trim() || 0));
+    const totalSales = String(Math.round(computedTotalSales));
     try {
       if (editId) {
         await axios.patch(`${API}/daily-summaries/${editId}/`, {
           store: storeId,
           report_date: reportDate,
           total_sales: totalSales,
-          total_expenses: expenses,
-          labor_costs: labor,
+          total_expenses: String(expenses),
+          labor_costs: String(labor),
           notes: notes.trim(),
         });
       } else {
@@ -160,8 +163,8 @@ export default function DailyExpenseEntry() {
             store: existing.store,
             report_date: existing.report_date,
             total_sales: totalSales,
-            total_expenses: expenses,
-            labor_costs: labor,
+            total_expenses: String(expenses),
+            labor_costs: String(labor),
             notes: notes.trim(),
           });
         } else {
@@ -169,8 +172,8 @@ export default function DailyExpenseEntry() {
             store: storeId,
             report_date: reportDate,
             total_sales: totalSales,
-            total_expenses: expenses,
-            labor_costs: labor,
+            total_expenses: String(expenses),
+            labor_costs: String(labor),
             notes: notes.trim(),
           });
         }
@@ -254,9 +257,9 @@ export default function DailyExpenseEntry() {
                       <tr key={s.id} className="border-b border-gray-50 hover:bg-sky-50/30">
                         <td className="px-2 sm:px-4 py-3 text-gray-900 whitespace-nowrap">{storeName(s.store)}</td>
                         <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.report_date}</td>
-                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.total_sales}</td>
-                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.total_expenses}</td>
-                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.labor_costs}</td>
+                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(s.total_sales)}</td>
+                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(s.total_expenses)}</td>
+                        <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(s.labor_costs)}</td>
                         <td className="px-2 sm:px-4 py-3 text-gray-500 max-w-[240px] truncate" title={s.notes || undefined}>{s.notes || '—'}</td>
                         <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                           <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
@@ -300,16 +303,16 @@ export default function DailyExpenseEntry() {
                 <div>
                   <label className={labelClass}>売上合計（円）</label>
                   <div className="mt-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800">
-                    {computedTotalSales.toLocaleString()}（来店記録の利用額の合計）
+                    {formatPrice(computedTotalSales)}（来店記録の利用額の合計）
                   </div>
                 </div>
                 <div>
                   <label className={labelClass}>経費合計（円） *</label>
-                  <input type="number" step="0.01" min="0" value={totalExpenses} onChange={(e) => setTotalExpenses(e.target.value)} className={inputClass} placeholder="0" required />
+                  <input type="number" step="1" min="0" value={totalExpenses} onChange={(e) => setTotalExpenses(e.target.value)} className={inputClass} placeholder="0" required />
                 </div>
                 <div>
                   <label className={labelClass}>人件費（円） *</label>
-                  <input type="number" step="0.01" min="0" value={laborCosts} onChange={(e) => setLaborCosts(e.target.value)} className={inputClass} placeholder="0" required />
+                  <input type="number" step="1" min="0" value={laborCosts} onChange={(e) => setLaborCosts(e.target.value)} className={inputClass} placeholder="0" required />
                 </div>
                 <div>
                   <label className={labelClass}>備考</label>

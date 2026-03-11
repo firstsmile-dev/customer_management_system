@@ -23,11 +23,13 @@ export interface UserEditFormData {
   store: string | null;
 }
 
-export const USER_ROLES = ['Cast', 'Staff', 'Manager', 'Admin'] as const;
+export const USER_ROLES = ['Cast', 'Staff', 'Manager', 'Supervisor', 'Admin', 'Owner'] as const;
 
 export const USER_ROLE_LABELS: Record<string, string> = {
   Cast: 'キャスト',
   Staff: 'スタッフ',
   Manager: 'マネージャー',
+  Supervisor: '統括',
   Admin: '管理者',
+  Owner: 'オーナー',
 };

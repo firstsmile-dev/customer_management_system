@@ -7,6 +7,7 @@ import type { StaffMember } from '../types/staffMember';
 import type { Store } from '../types/customer';
 import type { User } from '../types/user';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
+import { formatPrice } from '../utils/formatPrice';
 import { API } from '../config';
 
 const inputClass =
@@ -59,19 +60,16 @@ const emptyForm = (firstStaffId: string): PerformanceTargetFormData => ({
 });
 
 function toFormData(t: PerformanceTarget): PerformanceTargetFormData {
+  const n = Number(t.target_amount);
+  const amount = Number.isNaN(n) ? '0' : String(Math.round(n));
   return {
     staff: t.staff,
-    target_amount: t.target_amount,
+    target_amount: amount,
     target_type: t.target_type,
     target_date: t.target_date,
   };
 }
 
-function formatAmount(value: string | number): string {
-  const n = typeof value === 'string' ? parseFloat(value) : value;
-  if (Number.isNaN(n)) return '—';
-  return Number.isInteger(n) ? String(n) : n.toFixed(1);
-}
 
 export default function PerformanceTargetList() {
   const { user } = useAuth();
@@ -142,7 +140,7 @@ export default function PerformanceTargetList() {
     try {
       await axios.post(`${API}/performance-targets/`, {
         staff: createForm.staff,
-        target_amount: createForm.target_amount,
+        target_amount: Math.round(Number(createForm.target_amount)) || 0,
         target_type: createForm.target_type,
         target_date: createForm.target_date,
       });
@@ -163,7 +161,7 @@ export default function PerformanceTargetList() {
     try {
       await axios.patch(`${API}/performance-targets/${editId}/`, {
         staff: editForm.staff,
-        target_amount: editForm.target_amount,
+        target_amount: Math.round(Number(editForm.target_amount)) || 0,
         target_type: editForm.target_type,
         target_date: editForm.target_date,
       });
@@ -266,7 +264,7 @@ export default function PerformanceTargetList() {
                       {!isCast && <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{castDisplayName(t.staff)}</td>}
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{t.target_type === 'Daily' ? '日次' : '月次'}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{t.target_date}</td>
-                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatAmount(t.target_amount)} 円</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(t.target_amount)} 円</td>
                       <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                           <button type="button" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 text-xs sm:text-sm" onClick={() => openEdit(t)}>
@@ -379,7 +377,7 @@ function PerformanceTargetForm({ form, setForm, staffOptions, staffLabel, isCast
       </div>
       <div>
         <label className={labelClass}>目標額（円） *</label>
-        <input type="number" step="0.01" min="0" value={form.target_amount} onChange={(e) => update({ target_amount: e.target.value })} className={inputClass} required />
+        <input type="number" step="1" min="0" value={form.target_amount} onChange={(e) => update({ target_amount: e.target.value })} className={inputClass} required />
       </div>
       <div className="flex gap-2 pt-2">
         <button type="submit" disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 disabled:opacity-60">

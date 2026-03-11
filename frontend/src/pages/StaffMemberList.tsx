@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
+import { formatPrice } from '../utils/formatPrice';
 import type { StaffMember, StaffMemberFormData } from '../types/staffMember';
 import type { Store } from '../types/customer';
 import type { User } from '../types/user';
@@ -57,10 +58,12 @@ function formatDateTime(s: string) {
 }
 
 function toFormData(m: StaffMember): StaffMemberFormData {
+  const n = Number(m.hourly_wage);
+  const wage = Number.isNaN(n) ? '0' : String(Math.round(n));
   return {
     user: m.user,
     store: m.store,
-    hourly_wage: m.hourly_wage,
+    hourly_wage: wage,
     commission_rate: String(m.commission_rate),
     is_on_duty: m.is_on_duty,
     check_in: m.check_in.slice(0, 16),
@@ -144,7 +147,7 @@ export default function StaffMemberList() {
     try {
       await axios.post(`${API}/staff-members/`, {
         ...createForm,
-        hourly_wage: createForm.hourly_wage,
+        hourly_wage: Math.round(Number(createForm.hourly_wage)) || 0,
         commission_rate: Number(createForm.commission_rate),
         check_in: new Date(createForm.check_in).toISOString(),
         check_out: new Date(createForm.check_out).toISOString(),
@@ -166,6 +169,7 @@ export default function StaffMemberList() {
     try {
       await axios.patch(`${API}/staff-members/${editId}/`, {
         ...editForm,
+        hourly_wage: Math.round(Number(editForm.hourly_wage)) || 0,
         commission_rate: Number(editForm.commission_rate),
         check_in: new Date(editForm.check_in).toISOString(),
         check_out: new Date(editForm.check_out).toISOString(),
@@ -239,7 +243,7 @@ export default function StaffMemberList() {
                     <tr key={m.id} className="border-b border-gray-50 hover:bg-sky-50/50">
                       <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{userDisplayName(m.user)}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{storeName(m.store)}</td>
-                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{m.hourly_wage}</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(m.hourly_wage)}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{m.commission_rate}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{m.is_on_duty ? 'はい' : 'いいえ'}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatDateTime(m.check_in)}</td>
@@ -277,7 +281,7 @@ export default function StaffMemberList() {
                 <dl className="mt-3 space-y-2 text-sm">
                   <div><dt className="text-gray-500">ユーザー</dt><dd className="font-medium">{userDisplayName(m.user)}</dd></div>
                   <div><dt className="text-gray-500">店舗</dt><dd>{storeName(m.store)}</dd></div>
-                  <div><dt className="text-gray-500">時給（円）</dt><dd>{m.hourly_wage}</dd></div>
+                  <div><dt className="text-gray-500">時給（円）</dt><dd>{formatPrice(m.hourly_wage)}</dd></div>
                   <div><dt className="text-gray-500">歩合率</dt><dd>{m.commission_rate}</dd></div>
                   <div><dt className="text-gray-500">出勤中</dt><dd>{m.is_on_duty ? 'はい' : 'いいえ'}</dd></div>
                   <div><dt className="text-gray-500">出勤</dt><dd>{formatDateTime(m.check_in)}</dd></div>
@@ -382,7 +386,7 @@ function StaffMemberForm({ form, setForm, users, stores, onSubmit, saving, submi
       </div>
       <div>
         <label className={labelClass}>時給（円） *</label>
-        <input type="number" step="0.01" min="0" value={form.hourly_wage} onChange={(e) => update({ hourly_wage: e.target.value })} className={inputClass} required />
+        <input type="number" step="1" min="0" value={form.hourly_wage} onChange={(e) => update({ hourly_wage: e.target.value })} className={inputClass} required />
       </div>
       <div>
         <label className={labelClass}>歩合率 *</label>

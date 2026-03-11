@@ -1,4 +1,4 @@
-export type AuthRole = 'Cast' | 'Staff' | 'Manager' | 'Admin';
+export type AuthRole = 'Cast' | 'Staff' | 'Manager' | 'Supervisor' | 'Admin' | 'Owner';
 
 export interface AuthUser {
   user_id: string;

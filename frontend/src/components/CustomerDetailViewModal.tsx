@@ -5,6 +5,7 @@ import type {
   CustomerDetailFormData,
   CustomerPreferenceFormData,
 } from '../types/customer';
+import { formatPrice } from '../utils/formatPrice';
 import { API } from '../config';
 
 const initialProfile: CustomerProfileFormData = {
@@ -137,8 +138,8 @@ export default function CustomerDetailViewModal({
                 job_title: d.job_title || '',
                 job_description: d.job_description || '',
                 work_location: d.work_location || '',
-                monthly_income: String(d.monthly_income ?? ''),
-                monthly_drinking_budget: String(d.monthly_drinking_budget ?? ''),
+                monthly_income: Number.isNaN(Number(d.monthly_income)) ? '' : String(Math.round(Number(d.monthly_income))),
+                monthly_drinking_budget: Number.isNaN(Number(d.monthly_drinking_budget)) ? '' : String(Math.round(Number(d.monthly_drinking_budget))),
                 residence_type: d.residence_type || 'Own',
                 nearest_station: d.nearest_station || '',
                 has_lover: d.has_lover ?? false,
@@ -180,15 +181,15 @@ export default function CustomerDetailViewModal({
       if (detail) {
         await axios.patch(baseUrl('customer-details'), {
           ...editDetail,
-          monthly_income: parseInt(editDetail.monthly_income, 10) || 0,
-          monthly_drinking_budget: parseInt(editDetail.monthly_drinking_budget, 10) || 0,
+          monthly_income: Math.round(Number(editDetail.monthly_income)) || 0,
+          monthly_drinking_budget: Math.round(Number(editDetail.monthly_drinking_budget)) || 0,
         });
       } else {
         await axios.post(`${API}/customer-details/`, {
           customer: customerId,
           ...editDetail,
-          monthly_income: parseInt(editDetail.monthly_income, 10) || 0,
-          monthly_drinking_budget: parseInt(editDetail.monthly_drinking_budget, 10) || 0,
+          monthly_income: Math.round(Number(editDetail.monthly_income)) || 0,
+          monthly_drinking_budget: Math.round(Number(editDetail.monthly_drinking_budget)) || 0,
         });
       }
       if (preference) {
@@ -293,8 +294,8 @@ export default function CustomerDetailViewModal({
                       <div><dt className="text-gray-500">仕事内容</dt><dd className="whitespace-pre-wrap">{detail.job_description}</dd></div>
                     )}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                      <div><dt className="text-gray-500">月収（円）</dt><dd>{detail.monthly_income != null && detail.monthly_income !== '' ? Number(detail.monthly_income) : '—'}</dd></div>
-                      <div><dt className="text-gray-500">飲み代予算（円/月）</dt><dd>{detail.monthly_drinking_budget != null && detail.monthly_drinking_budget !== '' ? Number(detail.monthly_drinking_budget) : '—'}</dd></div>
+                      <div><dt className="text-gray-500">月収（円）</dt><dd>{formatPrice(detail.monthly_income)}</dd></div>
+                      <div><dt className="text-gray-500">飲み代予算（円/月）</dt><dd>{formatPrice(detail.monthly_drinking_budget)}</dd></div>
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                       <div><dt className="text-gray-500">居住</dt><dd>{detail.residence_type === 'Own' ? '持家' : detail.residence_type === 'Rent' ? '賃貸' : detail.residence_type || '—'}</dd></div>
@@ -364,8 +365,8 @@ export default function CustomerDetailViewModal({
                 </div>
                 <div><label className={labelClass}>仕事内容</label><textarea value={editDetail.job_description} onChange={(e) => setEditDetail((d) => ({ ...d, job_description: e.target.value }))} className={inputClass} rows={2} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className={labelClass}>月収（円）</label><input type="number" value={editDetail.monthly_income} onChange={(e) => setEditDetail((d) => ({ ...d, monthly_income: e.target.value }))} className={inputClass} /></div>
-                  <div><label className={labelClass}>飲み代予算（円/月）</label><input type="number" value={editDetail.monthly_drinking_budget} onChange={(e) => setEditDetail((d) => ({ ...d, monthly_drinking_budget: e.target.value }))} className={inputClass} /></div>
+                  <div><label className={labelClass}>月収（円）</label><input type="number" step="1" min="0" value={editDetail.monthly_income} onChange={(e) => setEditDetail((d) => ({ ...d, monthly_income: e.target.value }))} className={inputClass} /></div>
+                  <div><label className={labelClass}>飲み代予算（円/月）</label><input type="number" step="1" min="0" value={editDetail.monthly_drinking_budget} onChange={(e) => setEditDetail((d) => ({ ...d, monthly_drinking_budget: e.target.value }))} className={inputClass} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className={labelClass}>居住</label><select value={editDetail.residence_type} onChange={(e) => setEditDetail((d) => ({ ...d, residence_type: e.target.value }))} className={inputClass}><option value="Own">持家</option><option value="Rent">賃貸</option><option value="Other">その他</option></select></div>

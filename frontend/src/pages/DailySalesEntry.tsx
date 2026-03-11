@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import type { Store, Customer } from '../types/customer';
 import type { VisitRecord } from '../types/visitRecord';
+import { formatPrice } from '../utils/formatPrice';
 import { API } from '../config';
 
 const labelClass = 'block text-sm font-medium text-gray-700';
@@ -158,7 +159,7 @@ export default function DailySalesEntry() {
                         <tr key={`${row.store}-${row.report_date}-${i}`} className="border-b border-gray-50 hover:bg-sky-50/30">
                           <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{storeName(row.store)}</td>
                           <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{row.report_date}</td>
-                          <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{row.total_sales.toLocaleString()}</td>
+                          <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(row.total_sales)}</td>
                         </tr>
                       ))
                     )}

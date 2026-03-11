@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import CustomerDetailViewModal from '../components/CustomerDetailViewModal';
 import { ERROR_MESSAGES } from '../utils/errorMessages';
+import { formatPrice } from '../utils/formatPrice';
 import type { Customer, Store, CustomerFormData } from '../types/customer';
 import { API } from '../config';
 
@@ -114,13 +115,15 @@ export default function CustomerList() {
 
   const openEdit = (c: Customer) => {
     setEditId(c.id);
+    const n = Number(c.total_spend);
+    const spend = Number.isNaN(n) ? '0' : String(Math.round(n));
     setEditForm({
       store: c.store,
       name: c.name,
       first_visit: c.first_visit,
       contact_info: (c.contact_info as Record<string, string>) || {},
       preferences: (c.preferences as Record<string, string>) || {},
-      total_spend: String(c.total_spend),
+      total_spend: spend,
     });
     setError(null);
   };
@@ -137,7 +140,7 @@ export default function CustomerList() {
         first_visit: editForm.first_visit,
         contact_info: editForm.contact_info,
         preferences: editForm.preferences,
-        total_spend: editForm.total_spend,
+        total_spend: Math.round(Number(editForm.total_spend)) || 0,
       });
       fetchCustomers();
       setEditId(null);
@@ -258,7 +261,7 @@ export default function CustomerList() {
                       <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{c.name}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{storeName(c.store)}</td>
                       <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{c.first_visit}</td>
-                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{c.total_spend} 円</td>
+                      <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(c.total_spend)} 円</td>
                       <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                           <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => setViewId(c.id)}><IconView />表示</button>
@@ -296,7 +299,7 @@ export default function CustomerList() {
                   <div><dt className="text-gray-500">名前</dt><dd className="font-medium">{c.name}</dd></div>
                   <div><dt className="text-gray-500">店舗</dt><dd>{storeName(c.store)}</dd></div>
                   <div><dt className="text-gray-500">初回来店</dt><dd>{c.first_visit}</dd></div>
-                  <div><dt className="text-gray-500">累計利用額</dt><dd>{c.total_spend} 円</dd></div>
+                  <div><dt className="text-gray-500">累計利用額</dt><dd>{formatPrice(c.total_spend)} 円</dd></div>
                   {(ci.line_id || ci.instagram || ci.phone) && (
                     <div><dt className="text-gray-500">連絡先</dt><dd>LINE: {ci.line_id || '—'} / IG: {ci.instagram || '—'} / TEL: {ci.phone || '—'}</dd></div>
                   )}
@@ -334,7 +337,7 @@ export default function CustomerList() {
                 </div>
                 <div>
                   <label className={labelClass}>累計利用額（円）</label>
-                  <input type="number" step="0.01" min="0" value={editForm.total_spend} onChange={(e) => setEditForm((f) => (f ? { ...f, total_spend: e.target.value } : null))} className={inputClass} />
+                  <input type="number" step="1" min="0" value={editForm.total_spend} onChange={(e) => setEditForm((f) => (f ? { ...f, total_spend: e.target.value } : null))} className={inputClass} />
                 </div>
                 <div className="flex gap-2">
                   <button type="submit" disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 disabled:opacity-60">{saving ? '保存中…' : <><IconSave />保存</>}</button>

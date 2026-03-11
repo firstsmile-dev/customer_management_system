@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
+import { USER_ROLE_LABELS } from './types/user';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -66,7 +67,7 @@ function Nav() {
             <span className="text-xs text-gray-500" title={user.email}>
               {user.email}
             </span>
-            <span className="text-xs text-gray-400">({user.role})</span>
+            <span className="text-xs text-gray-400">({USER_ROLE_LABELS[user.role] ?? user.role})</span>
             <button
               type="button"
               onClick={logout}
@@ -110,7 +111,7 @@ function Nav() {
               <p className="text-xs text-gray-500 truncate" title={user.email}>
                 {user.email}
               </p>
-              <p className="text-xs text-gray-400">{user.role}</p>
+              <p className="text-xs text-gray-400">{USER_ROLE_LABELS[user.role] ?? user.role}</p>
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); logout(); }}

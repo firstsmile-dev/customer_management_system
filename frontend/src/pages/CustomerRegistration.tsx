@@ -46,7 +46,7 @@ export default function CustomerRegistration() {
         first_visit: form.first_visit,
         contact_info: form.contact_info,
         preferences: form.preferences,
-        total_spend: form.total_spend,
+        total_spend: Math.round(Number(form.total_spend)) || 0,
       };
       const res = await axios.post(`${API}/customers/`, payload);
       setCreatedCustomerId(res.data.id);
@@ -189,7 +189,7 @@ export default function CustomerRegistration() {
               <label className={labelClass}>累計利用額（円）</label>
               <input
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 value={form.total_spend}
                 onChange={(e) => setForm((f) => ({ ...f, total_spend: e.target.value }))}

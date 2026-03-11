@@ -6,12 +6,14 @@ const STORAGE_ACCESS = 'cms_access';
 const STORAGE_REFRESH = 'cms_refresh';
 const STORAGE_USER = 'cms_user';
 
-/** Paths allowed per role. Admin can access all. */
+/** Paths allowed per role. Admin and Owner can access all. Supervisor = Manager + view all stores. */
 const ROLE_PATHS: Record<string, string[]> = {
   Cast: ['/', '/customers', '/customers/register', '/visit-records', '/my-page'],
   Staff: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/my-page', '/performance-targets'],
   Manager: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/stores', '/my-page', '/performance-targets'],
+  Supervisor: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/stores', '/my-page', '/performance-targets'],
   Admin: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets'],
+  Owner: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets'],
 };
 
 function getStoredUser(): AuthUser | null {

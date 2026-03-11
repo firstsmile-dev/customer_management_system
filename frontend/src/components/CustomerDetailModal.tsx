@@ -113,8 +113,8 @@ export default function CustomerDetailModal({ customerId, onClose, onSaved }: Cu
       await axios.post(`${API}/customer-details/`, {
         customer: customerId,
         ...detail,
-        monthly_income: parseInt(detail.monthly_income, 10) || 0,
-        monthly_drinking_budget: parseInt(detail.monthly_drinking_budget, 10) || 0,
+        monthly_income: Math.round(Number(detail.monthly_income)) || 0,
+        monthly_drinking_budget: Math.round(Number(detail.monthly_drinking_budget)) || 0,
       });
     } catch (err: unknown) {
       setError('登録に失敗しました。もう一度お試しください。');
@@ -229,11 +229,11 @@ export default function CustomerDetailModal({ customerId, onClose, onSaved }: Cu
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>月収（円）</label>
-                <input type="number" value={detail.monthly_income} onChange={(e) => setDetail((d) => ({ ...d, monthly_income: e.target.value }))} className={inputClass} />
+                <input type="number" step="1" min="0" value={detail.monthly_income} onChange={(e) => setDetail((d) => ({ ...d, monthly_income: e.target.value }))} className={inputClass} />
               </div>
               <div>
                 <label className={labelClass}>飲み代予算（円/月）</label>
-                <input type="number" value={detail.monthly_drinking_budget} onChange={(e) => setDetail((d) => ({ ...d, monthly_drinking_budget: e.target.value }))} className={inputClass} />
+                <input type="number" step="1" min="0" value={detail.monthly_drinking_budget} onChange={(e) => setDetail((d) => ({ ...d, monthly_drinking_budget: e.target.value }))} className={inputClass} />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

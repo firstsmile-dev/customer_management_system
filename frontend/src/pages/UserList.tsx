@@ -58,7 +58,7 @@ function formatDate(iso: string) {
 
 export default function UserList() {
   const { user: currentUser } = useAuth();
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdminOrOwner = currentUser?.role === 'Admin' || currentUser?.role === 'Owner';
   const [users, setUsers] = useState<User[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,7 +131,7 @@ export default function UserList() {
         username: editForm.username,
         email: editForm.email,
       };
-      if (isAdmin) {
+      if (isAdminOrOwner) {
         payload.role = editForm.role;
         payload.store = editForm.store || null;
       }
@@ -218,7 +218,7 @@ export default function UserList() {
                       <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex flex-wrap justify-end gap-1 sm:gap-2 items-center">
                           <button type="button" className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 text-xs sm:text-sm" onClick={() => setViewId(u.id)}><IconView />表示</button>
-                          {(isAdmin || currentUser?.user_id === u.id) && (
+                          {(isAdminOrOwner || currentUser?.user_id === u.id) && (
                             <button type="button" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 text-xs sm:text-sm" onClick={() => openEdit(u)}><IconEdit />編集</button>
                           )}
                           {deactivateConfirmId === u.id ? (
@@ -275,7 +275,7 @@ export default function UserList() {
                 saving={saving}
                 onCancel={() => { setCreateOpen(false); setCreateForm(null); }}
                 stores={stores}
-                isAdmin={isAdmin}
+                isAdmin={isAdminOrOwner}
               />
             </div>
           </div>
@@ -292,8 +292,8 @@ export default function UserList() {
                 onSubmit={handleSaveEdit}
                 saving={saving}
                 onCancel={() => { setEditId(null); setEditForm(null); }}
-                canEditRole={isAdmin}
-                canEditStore={isAdmin}
+                canEditRole={isAdminOrOwner}
+                canEditStore={isAdminOrOwner}
                 stores={stores}
                 storeName={storeName}
               />

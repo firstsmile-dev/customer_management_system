@@ -41,7 +41,9 @@ class CmsUser(models.Model):
         CAST = "Cast", "Cast"
         STAFF = "Staff", "Staff"
         MANAGER = "Manager", "Manager"
+        SUPERVISOR = "Supervisor", "Supervisor"  # 統括: same as Manager + can view all stores
         ADMIN = "Admin", "Admin"
+        OWNER = "Owner", "Owner"  # オーナー: full authority like Admin
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(max_length=255, blank=True, default="")
