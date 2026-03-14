@@ -41,7 +41,7 @@ class CmsUser(models.Model):
         CAST = "Cast", "Cast"
         STAFF = "Staff", "Staff"
         MANAGER = "Manager", "Manager"
-        SUPERVISOR = "Supervisor", "Supervisor"  # 統括: same as Manager + can view all stores
+        SUPERVISOR = "Supervisor", "Supervisor"  # 統括: same as Manager + viewable_stores (set by Admin)
         ADMIN = "Admin", "Admin"
         OWNER = "Owner", "Owner"  # オーナー: full authority like Admin
 
@@ -61,6 +61,13 @@ class CmsUser(models.Model):
         blank=True,
         db_column="store_id",
         related_name="users",
+    )
+    # 統括(Supervisor)用: 管理者が指定した閲覧可能な店舗（複数可）
+    viewable_stores = models.ManyToManyField(
+        Store,
+        related_name="viewable_by_users",
+        blank=True,
+        db_table="user_viewable_stores",
     )
     created_at = models.DateTimeField(default=timezone.now)
 

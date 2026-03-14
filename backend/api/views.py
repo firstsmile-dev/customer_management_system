@@ -48,6 +48,25 @@ def _get_request_user_store_id(request):
     return getattr(cms_user, "store_id", None)
 
 
+def _get_request_user_store_ids(request):
+    """
+    Return None if user can access all stores (Admin/Owner).
+    Return list of store PKs the user can access (Supervisor: viewable_stores; Manager/Staff/Cast: single store).
+    """
+    cms_user = _get_request_cms_user(request)
+    if cms_user is None:
+        return []
+    role = getattr(cms_user, "role", None)
+    if role in ("Admin", "Owner"):
+        return None  # no restriction = all stores
+    if role == "Supervisor":
+        ids = list(cms_user.viewable_stores.values_list("pk", flat=True))
+        return ids
+    # Manager, Staff, Cast: single store
+    sid = getattr(cms_user, "store_id", None)
+    return [sid] if sid else []
+
+
 def _is_admin(request):
     """True if the request user has Admin role."""
     cms_user = _get_request_cms_user(request)
@@ -78,18 +97,18 @@ def _is_supervisor(request):
 
 
 def _ensure_store_for_non_admin(request, store_id, action_label="this action"):
-    """If user is not admin/owner, ensure store_id equals their store. Return None or a 403 Response."""
+    """If user is not admin/owner, ensure store_id is one of their allowed stores. Return None or a 403 Response."""
     if _is_admin_or_owner(request):
         return None
-    user_store_id = _get_request_user_store_id(request)
-    if user_store_id is None:
+    store_ids = _get_request_user_store_ids(request)
+    if not store_ids:  # Supervisor with no viewable_stores, or no store assigned
         return Response(
-            {"detail": "You do not have a store assigned. Only your store is allowed."},
+            {"detail": "You do not have a store assigned. Only your store(s) are allowed."},
             status=status.HTTP_403_FORBIDDEN,
         )
-    if store_id is None or str(store_id) != str(user_store_id):
+    if store_id is None or str(store_id) not in [str(s) for s in store_ids]:
         return Response(
-            {"detail": f"You can only perform {action_label} for your own store."},
+            {"detail": f"You can only perform {action_label} for your allowed store(s)."},
             status=status.HTTP_403_FORBIDDEN,
         )
     return None
@@ -105,20 +124,18 @@ def api_home(request):
 
 
 class StoreViewSet(viewsets.ModelViewSet):
-    """CRUD for stores. Admin/Owner: all stores, can create. Supervisor: all stores (view only). Others: only their store. Create: Admin and Owner only."""
+    """CRUD for stores. Admin/Owner: all stores, can create. Supervisor: viewable_stores only (set by Admin). Others: only their store. Create: Admin and Owner only."""
     queryset = Store.objects.all()
     serializer_class = StoreSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin_or_owner(self.request):
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
             return qs
-        if _is_supervisor(self.request):
-            return qs  # Supervisor can view all stores
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        if not store_ids:
             return qs.none()
-        return qs.filter(pk=store_id)
+        return qs.filter(pk__in=store_ids)
 
     def create(self, request, *args, **kwargs):
         if not _is_admin_or_owner(request):
@@ -151,12 +168,13 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self._is_admin():
-            return qs
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
+            pass  # Admin/Owner: all users
+        elif not store_ids:
             return qs.none()
-        qs = qs.filter(store_id=store_id)
+        else:
+            qs = qs.filter(store_id__in=store_ids)
         role = self._get_request_user_role()
         if role == "Staff":
             return qs.filter(role=CmsUser.Role.CAST)
@@ -192,18 +210,18 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
-    """CRUD for the `customers` table only. Admin: all. Others: only customers of their store."""
+    """CRUD for the `customers` table only. Admin: all. Others: only customers of their store(s)."""
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin_or_owner(self.request):
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
             return qs
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        if not store_ids:
             return qs.none()
-        return qs.filter(store_id=store_id)
+        return qs.filter(store_id__in=store_ids)
 
     def create(self, request, *args, **kwargs):
         store_id = request.data.get("store")
@@ -231,13 +249,13 @@ class StaffMemberViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin_or_owner(self.request):
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
             pass
+        elif not store_ids:
+            return qs.none()
         else:
-            store_id = _get_request_user_store_id(self.request)
-            if store_id is None:
-                return qs.none()
-            qs = qs.filter(store_id=store_id)
+            qs = qs.filter(store_id__in=store_ids)
         role = self._get_request_user_role()
         if role == "Staff":
             return qs.filter(user__role=CmsUser.Role.CAST)
@@ -282,28 +300,29 @@ class StaffMemberViewSet(viewsets.ModelViewSet):
 
 
 class VisitRecordViewSet(viewsets.ModelViewSet):
-    """CRUD for the `visit_records` table. Admin: all. Others: only records for customers in their store."""
+    """CRUD for the `visit_records` table. Admin: all. Others: only records for customers in their store(s)."""
     queryset = VisitRecord.objects.all()
     serializer_class = VisitRecordSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin_or_owner(self.request):
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
             return qs
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        if not store_ids:
             return qs.none()
-        return qs.filter(customer__store_id=store_id)
+        return qs.filter(customer__store_id__in=store_ids)
 
     def create(self, request, *args, **kwargs):
         if not _is_admin_or_owner(self.request):
             customer_id = request.data.get("customer")
-            if customer_id:
+            store_ids = _get_request_user_store_ids(self.request)
+            if customer_id and store_ids:
                 try:
                     c = Customer.objects.get(pk=customer_id)
-                    if c.store_id != _get_request_user_store_id(self.request):
+                    if str(c.store_id) not in [str(s) for s in store_ids]:
                         return Response(
-                            {"detail": "You can only create visit records for customers in your store."},
+                            {"detail": "You can only create visit records for customers in your store(s)."},
                             status=status.HTTP_403_FORBIDDEN,
                         )
                 except Customer.DoesNotExist:
@@ -313,16 +332,17 @@ class VisitRecordViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         if not _is_admin_or_owner(self.request):
             instance = self.get_object()
-            if instance.customer.store_id != _get_request_user_store_id(self.request):
+            store_ids = _get_request_user_store_ids(self.request)
+            if store_ids and str(instance.customer.store_id) not in [str(s) for s in store_ids]:
                 return Response(
-                    {"detail": "You can only update visit records for your store."},
+                    {"detail": "You can only update visit records for your store(s)."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
         return super().update(request, *args, **kwargs)
 
 
 class CustomerProfileViewSet(viewsets.ModelViewSet):
-    """CRUD for the `customers_profile` table. Admin: all. Others: only for customers in their store."""
+    """CRUD for the `customers_profile` table. Admin: all. Others: only for customers in their store(s)."""
     queryset = CustomerProfile.objects.all()
     serializer_class = CustomerProfileSerializer
     lookup_url_kwarg = "customer_id"
@@ -330,16 +350,16 @@ class CustomerProfileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin_or_owner(self.request):
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
             return qs
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        if not store_ids:
             return qs.none()
-        return qs.filter(customer__store_id=store_id)
+        return qs.filter(customer__store_id__in=store_ids)
 
 
 class CustomerDetailViewSet(viewsets.ModelViewSet):
-    """CRUD for the `customers_detail` table. Admin: all. Others: only for customers in their store."""
+    """CRUD for the `customers_detail` table. Admin: all. Others: only for customers in their store(s)."""
     queryset = CustomerDetail.objects.all()
     serializer_class = CustomerDetailSerializer
     lookup_url_kwarg = "customer_id"
@@ -347,16 +367,16 @@ class CustomerDetailViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin_or_owner(self.request):
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
             return qs
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        if not store_ids:
             return qs.none()
-        return qs.filter(customer__store_id=store_id)
+        return qs.filter(customer__store_id__in=store_ids)
 
 
 class CustomerPreferenceViewSet(viewsets.ModelViewSet):
-    """CRUD for the `customer_preferences` table. Admin: all. Others: only for customers in their store."""
+    """CRUD for the `customer_preferences` table. Admin: all. Others: only for customers in their store(s)."""
     queryset = CustomerPreference.objects.all()
     serializer_class = CustomerPreferenceSerializer
     lookup_url_kwarg = "customer_id"
@@ -364,12 +384,12 @@ class CustomerPreferenceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin_or_owner(self.request):
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
             return qs
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        if not store_ids:
             return qs.none()
-        return qs.filter(customer__store_id=store_id)
+        return qs.filter(customer__store_id__in=store_ids)
 
 
 def _get_request_user_id(request):
@@ -404,11 +424,11 @@ class PerformanceTargetViewSet(viewsets.ModelViewSet):
             if user_id is None:
                 return qs.none()
             return qs.filter(staff__user_id=user_id)
-        # Staff, Manager, or Supervisor: targets for staff in their store only
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        # Staff, Manager, or Supervisor: targets for staff in their store(s) only
+        store_ids = _get_request_user_store_ids(self.request)
+        if not store_ids:
             return qs.none()
-        return qs.filter(staff__store_id=store_id)
+        return qs.filter(staff__store_id__in=store_ids)
 
     def _staff_belongs_to_request_user(self, staff_id):
         """True if the given staff_id is a StaffMember for the current user (Cast: own only)."""
@@ -422,13 +442,13 @@ class PerformanceTargetViewSet(viewsets.ModelViewSet):
             return False
 
     def _staff_in_request_user_store(self, staff_id):
-        """True if the given staff_id is a StaffMember in the current user's store (Staff/Manager)."""
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        """True if the given staff_id is a StaffMember in the current user's store(s) (Staff/Manager/Supervisor)."""
+        store_ids = _get_request_user_store_ids(self.request)
+        if not store_ids:
             return False
         try:
             sm = StaffMember.objects.get(pk=staff_id)
-            return str(sm.store_id) == str(store_id)
+            return str(sm.store_id) in [str(s) for s in store_ids]
         except StaffMember.DoesNotExist:
             return False
 
@@ -474,18 +494,18 @@ class PerformanceTargetViewSet(viewsets.ModelViewSet):
 
 
 class DailySummaryViewSet(viewsets.ModelViewSet):
-    """CRUD for the `daily_summaries` table. Admin: all. Others: only their store."""
+    """CRUD for the `daily_summaries` table. Admin: all. Others: only their store(s)."""
     queryset = DailySummary.objects.all()
     serializer_class = DailySummarySerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_admin_or_owner(self.request):
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
             return qs
-        store_id = _get_request_user_store_id(self.request)
-        if store_id is None:
+        if not store_ids:
             return qs.none()
-        return qs.filter(store_id=store_id)
+        return qs.filter(store_id__in=store_ids)
 
     def create(self, request, *args, **kwargs):
         store_id = request.data.get("store")

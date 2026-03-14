@@ -94,6 +94,7 @@ export default function UserList() {
       role: u.role,
       password: '',
       store: u.store ?? null,
+      viewable_stores: u.viewable_stores ?? [],
     });
     setError(null);
   };
@@ -111,6 +112,9 @@ export default function UserList() {
         role: createForm.role,
       };
       if (createForm.store) payload.store = createForm.store;
+      if (createForm.role === 'Supervisor' && Array.isArray(createForm.viewable_stores) && createForm.viewable_stores.length > 0) {
+        payload.viewable_stores = createForm.viewable_stores;
+      }
       await axios.post(`${API}/users/`, payload);
       fetchUsers();
       setCreateOpen(false);
@@ -127,13 +131,14 @@ export default function UserList() {
     setSaving(true);
     setError(null);
     try {
-      const payload: { username: string; email: string; role?: string; password?: string; store?: string | null } = {
+      const payload: { username: string; email: string; role?: string; password?: string; store?: string | null; viewable_stores?: string[] } = {
         username: editForm.username,
         email: editForm.email,
       };
       if (isAdminOrOwner) {
         payload.role = editForm.role;
         payload.store = editForm.store || null;
+        payload.viewable_stores = editForm.role === 'Supervisor' ? (editForm.viewable_stores ?? []) : [];
       }
       if (editForm.password.trim()) payload.password = editForm.password;
       await axios.patch(`${API}/users/${editId}/`, payload);
@@ -164,6 +169,7 @@ export default function UserList() {
     password: '',
     role: USER_ROLES[0],
     store: null,
+    viewable_stores: [],
   });
 
   return (
@@ -252,6 +258,9 @@ export default function UserList() {
                   <div><dt className="text-gray-500">メールアドレス</dt><dd>{u.email}</dd></div>
                   <div><dt className="text-gray-500">権限</dt><dd>{USER_ROLE_LABELS[u.role] ?? u.role}</dd></div>
                   <div><dt className="text-gray-500">店舗</dt><dd>{storeName(u.store)}</dd></div>
+                  {u.role === 'Supervisor' && (
+                    <div><dt className="text-gray-500">閲覧店舗</dt><dd>{(u.viewable_stores ?? []).map((id) => storeName(id)).join('、') || '—'}</dd></div>
+                  )}
                   <div><dt className="text-gray-500">登録日</dt><dd>{formatDate(u.created_at)}</dd></div>
                 </dl>
                 <div className="mt-4 flex gap-2">
@@ -366,6 +375,25 @@ function UserCreateForm({ form, setForm, onSubmit, saving, onCancel, stores, isA
           </select>
         </div>
       )}
+      {isAdmin && form.role === 'Supervisor' && (
+        <div>
+          <label className={labelClass}>閲覧店舗（統括）</label>
+          <p className="text-xs text-gray-500 mt-0.5">この統括が閲覧できる店舗を選択（複数可）</p>
+          <select
+            multiple
+            value={form.viewable_stores}
+            onChange={(e) => {
+              const selected = Array.from(e.target.selectedOptions, (o) => o.value);
+              update({ viewable_stores: selected });
+            }}
+            className={inputClass + ' min-h-[80px]'}
+          >
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="flex gap-2 pt-2">
         <button type="submit" disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 disabled:opacity-60">
           {saving ? '送信中…' : <><IconSave />登録</>}
@@ -421,6 +449,25 @@ function UserEditForm({ form, setForm, onSubmit, saving, onCancel, canEditRole =
           <input type="text" value={storeName(form.store)} className={inputClass} readOnly disabled />
         )}
       </div>
+      {canEditStore && form.role === 'Supervisor' && (
+        <div>
+          <label className={labelClass}>閲覧店舗（統括）</label>
+          <p className="text-xs text-gray-500 mt-0.5">この統括が閲覧できる店舗を選択（複数可）</p>
+          <select
+            multiple
+            value={form.viewable_stores}
+            onChange={(e) => {
+              const selected = Array.from(e.target.selectedOptions, (o) => o.value);
+              update({ viewable_stores: selected });
+            }}
+            className={inputClass + ' min-h-[80px]'}
+          >
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label className={labelClass}>新しいパスワード</label>
         <input type="password" value={form.password} onChange={(e) => update({ password: e.target.value })} className={inputClass} placeholder="変更する場合のみ入力" autoComplete="new-password" />

@@ -4,6 +4,8 @@ export interface User {
   email: string;
   role: string;
   store?: string | null;
+  /** 統括(Supervisor)用: 閲覧可能な店舗IDの配列。管理者が設定。 */
+  viewable_stores?: string[];
   created_at: string;
 }
 
@@ -13,6 +15,7 @@ export interface UserCreateFormData {
   password: string;
   role: string;
   store: string | null;
+  viewable_stores: string[];
 }
 
 export interface UserEditFormData {
@@ -21,6 +24,7 @@ export interface UserEditFormData {
   role: string;
   password: string;
   store: string | null;
+  viewable_stores: string[];
 }
 
 export const USER_ROLES = ['Cast', 'Staff', 'Manager', 'Supervisor', 'Admin', 'Owner'] as const;

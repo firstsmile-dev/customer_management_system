@@ -94,11 +94,13 @@ export default function StaffMemberList() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /** Stores the logged-in user can select (only their store for non-admin; all for admin). */
+  /** Stores the logged-in user can select. Supervisor: API already returns only viewable_stores. */
   const allowedStores = useMemo(() => {
+    if (currentUser?.role === 'Admin' || currentUser?.role === 'Owner') return stores;
+    if (currentUser?.role === 'Supervisor') return stores; // API returns only viewable_stores
     if (!currentUser?.store_id) return stores;
     return stores.filter((s) => s.id === currentUser.store_id);
-  }, [stores, currentUser?.store_id]);
+  }, [stores, currentUser?.store_id, currentUser?.role]);
   const [viewId, setViewId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<StaffMemberFormData | null>(null);

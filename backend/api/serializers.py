@@ -24,10 +24,11 @@ class StoreSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={"input_type": "password"})
+    viewable_stores = serializers.PrimaryKeyRelatedField(many=True, queryset=Store.objects.all(), required=False)
 
     class Meta:
         model = CmsUser
-        fields = ["id", "username", "email", "password", "role", "store", "created_at"]
+        fields = ["id", "username", "email", "password", "role", "store", "viewable_stores", "created_at"]
         read_only_fields = ["id", "created_at"]
         extra_kwargs = {"password": {"write_only": True}}
 
