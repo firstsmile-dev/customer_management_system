@@ -37,6 +37,12 @@ const emptyTargetForm = (firstStaffId: string): PerformanceTargetFormData => ({
   target_date: todayISO(),
 });
 
+/** API response for GET /api/my-page/salary/ */
+interface MyPageSalary {
+  hourly_wage: number | null;
+  current_month_commission: number;
+  last_month_commission: number;
+}
 
 export default function MyPage() {
   const { user, updateStoredUser } = useAuth();
@@ -61,6 +67,10 @@ export default function MyPage() {
   const [targetSaving, setTargetSaving] = useState(false);
   const [targetError, setTargetError] = useState<string | null>(null);
 
+  // 給与情報（現在の時給・今月の歩合・先月の歩合）
+  const [salary, setSalary] = useState<MyPageSalary | null>(null);
+  const [salaryLoading, setSalaryLoading] = useState(false);
+
   const isCast = user?.role === 'Cast';
 
   const fetchTargets = () => {
@@ -80,6 +90,12 @@ export default function MyPage() {
       setStaff(s);
       setStores(st);
     }).finally(() => setTargetsLoading(false));
+  }, [isCast]);
+
+  useEffect(() => {
+    if (!isCast) return;
+    setSalaryLoading(true);
+    axios.get<MyPageSalary>(`${API}/my-page/salary/`).then((r) => setSalary(r.data)).catch(() => setSalary(null)).finally(() => setSalaryLoading(false));
   }, [isCast]);
 
   const myStaff = useMemo(() => {
@@ -244,6 +260,37 @@ export default function MyPage() {
             </div>
           </div>
         </section>
+
+        {/* Cast: 給与情報（現在の時給・現在給与・先月給与） */}
+        {isCast && (
+          <section className="mt-6 rounded-2xl border border-gray-100 bg-white shadow-card overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 bg-sakura-50/50">
+              <h2 className="text-sm font-medium text-gray-700">給与情報</h2>
+            </div>
+            <div className="p-5">
+              {salaryLoading ? (
+                <p className="text-sm text-gray-500">読み込み中…</p>
+              ) : salary ? (
+                <dl className="grid gap-4 sm:grid-cols-3 text-sm">
+                  <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                    <dt className="text-gray-500 font-medium">現在の時給</dt>
+                    <dd className="mt-1 text-lg font-semibold text-gray-900">{formatPrice(salary.hourly_wage)} 円</dd>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                    <dt className="text-gray-500 font-medium">現在給与（今月の歩合見込み）</dt>
+                    <dd className="mt-1 text-lg font-semibold text-gray-900">{formatPrice(salary.current_month_commission)} 円</dd>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                    <dt className="text-gray-500 font-medium">先月給与（先月の歩合）</dt>
+                    <dd className="mt-1 text-lg font-semibold text-gray-900">{formatPrice(salary.last_month_commission)} 円</dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="text-sm text-gray-500">スタッフに登録されると給与情報が表示されます。</p>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Cast: 売上目標 (own sales targets) */}
         {isCast && (

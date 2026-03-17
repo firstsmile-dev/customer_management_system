@@ -1,7 +1,10 @@
 from django.contrib.auth.hashers import check_password, make_password
 from rest_framework import status, viewsets
+from datetime import date
+from decimal import Decimal
+
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -520,6 +523,54 @@ class DailySummaryViewSet(viewsets.ModelViewSet):
             if err is not None:
                 return err
         return super().update(request, *args, **kwargs)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_page_salary(request):
+    """
+    Returns salary info for the current user (Cast): hourly_wage, current month commission, last month commission.
+    Used by My Page to show 現在給与（今月の歩合見込み） and 先月給与（先月の歩合）.
+    """
+    cms_user = _get_request_cms_user(request)
+    if not cms_user:
+        return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    my_staff = StaffMember.objects.filter(user=cms_user)
+    if not my_staff.exists():
+        return Response({
+            "hourly_wage": None,
+            "current_month_commission": 0,
+            "last_month_commission": 0,
+        })
+
+    today = date.today()
+    cur_year, cur_month = today.year, today.month
+    if cur_month == 1:
+        last_year, last_month = cur_year - 1, 12
+    else:
+        last_year, last_month = cur_year, cur_month - 1
+
+    first_staff = my_staff.first()
+    hourly_wage = int(Decimal(first_staff.hourly_wage))
+
+    current_commission = 0.0
+    for r in VisitRecord.objects.filter(
+        cast__in=my_staff, visit_date__year=cur_year, visit_date__month=cur_month
+    ).select_related("cast"):
+        current_commission += float(r.spending) * (r.cast.commission_rate / 100)
+
+    last_commission = 0.0
+    for r in VisitRecord.objects.filter(
+        cast__in=my_staff, visit_date__year=last_year, visit_date__month=last_month
+    ).select_related("cast"):
+        last_commission += float(r.spending) * (r.cast.commission_rate / 100)
+
+    return Response({
+        "hourly_wage": hourly_wage,
+        "current_month_commission": int(round(current_commission)),
+        "last_month_commission": int(round(last_commission)),
+    })
 
 
 @api_view(["POST"])

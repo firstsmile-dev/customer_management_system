@@ -22,5 +22,6 @@ urlpatterns = [
     path("auth/registration-mode/", views.registration_mode),
     path("auth/register/", views.register),
     path("auth/refresh/", TokenRefreshView.as_view()),
+    path("my-page/salary/", views.my_page_salary),
     path("", include(router.urls)),
 ]
