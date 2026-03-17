@@ -2,6 +2,7 @@ from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
 from .models import (
+    AdvanceRequest,
     CmsUser,
     Customer,
     CustomerDetail,
@@ -159,3 +160,33 @@ class DailySummarySerializer(serializers.ModelSerializer):
         model = DailySummary
         fields = ["id", "store", "report_date", "total_sales", "total_expenses", "labor_costs", "notes"]
         read_only_fields = ["id"]
+
+
+class AdvanceRequestSerializer(serializers.ModelSerializer):
+    """前借申請: amount, memo, attachment (前借伝票). Returns attachment_url for download."""
+
+    attachment_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AdvanceRequest
+        fields = [
+            "id",
+            "user",
+            "amount",
+            "status",
+            "memo",
+            "attachment",
+            "attachment_url",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
+        extra_kwargs = {"attachment": {"required": False}}
+
+    def get_attachment_url(self, obj):
+        if not obj.attachment:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.attachment.url)
+        return obj.attachment.url

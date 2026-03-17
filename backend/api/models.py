@@ -326,3 +326,49 @@ class CustomerPreference(models.Model):
     class Meta:
         db_table = "customer_preferences"
 
+
+def advance_slip_upload_to(instance, filename):
+    """Upload path for 前借伝票: advance_slips/year/month/unique.ext."""
+    ext = filename.split(".")[-1] if "." in filename else "bin"
+    from django.utils import timezone
+    t = timezone.now()
+    return f"advance_slips/{t.year}/{t.month}/{uuid.uuid4()}.{ext}"
+
+
+class AdvanceRequest(models.Model):
+    """
+    前借申請: staff/cast requests an advance on salary; can attach 前借伝票 (slip).
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "Pending", "申請中"
+        APPROVED = "Approved", "承認"
+        REJECTED = "Rejected", "却下"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        CmsUser,
+        on_delete=models.CASCADE,
+        db_column="user_id",
+        related_name="advance_requests",
+    )
+    amount = models.BigIntegerField(help_text="前借希望金額（円）")
+    status = models.CharField(
+        max_length=32,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    memo = models.TextField(blank=True, default="")
+    attachment = models.FileField(
+        upload_to=advance_slip_upload_to,
+        blank=True,
+        null=True,
+        help_text="前借伝票の添付",
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "advance_requests"
+        ordering = ["-created_at"]
+

@@ -10,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .auth import CmsUserAuth
 from .models import (
+    AdvanceRequest,
     CmsUser,
     Customer,
     CustomerDetail,
@@ -22,6 +23,7 @@ from .models import (
     VisitRecord,
 )
 from .serializers import (
+    AdvanceRequestSerializer,
     CustomerDetailSerializer,
     CustomerPreferenceSerializer,
     CustomerProfileSerializer,
@@ -523,6 +525,71 @@ class DailySummaryViewSet(viewsets.ModelViewSet):
             if err is not None:
                 return err
         return super().update(request, *args, **kwargs)
+
+
+class AdvanceRequestViewSet(viewsets.ModelViewSet):
+    """
+    前借申請: 金額の申請と前借伝票の添付。
+    - Cast/Staff: create (own), list (own).
+    - Manager/Supervisor/Admin/Owner: list (store-scoped or all), update status (approve/reject).
+    """
+
+    queryset = AdvanceRequest.objects.all()
+    serializer_class = AdvanceRequestSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        cms_user = _get_request_cms_user(self.request)
+        if not cms_user:
+            return qs.none()
+        role = _get_request_user_role(self.request)
+        if role in ("Admin", "Owner"):
+            return qs
+        if role in ("Manager", "Supervisor"):
+            store_ids = _get_request_user_store_ids(self.request)
+            if not store_ids:
+                return qs.none()
+            return qs.filter(user__store_id__in=store_ids)
+        return qs.filter(user=cms_user)
+
+    def create(self, request, *args, **kwargs):
+        # Applicants cannot set status; it always starts as Pending
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        if "status" in data:
+            data.pop("status", None)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        cms_user = _get_request_cms_user(self.request)
+        if not cms_user:
+            raise ValueError("Authentication required")
+        serializer.save(user=cms_user)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        role = _get_request_user_role(request)
+        if role not in ("Admin", "Owner", "Manager", "Supervisor"):
+            return Response(
+                {"detail": "Only managers or administrators can approve or reject advance requests."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        # Only allow updating status (and optionally memo)
+        allowed = {"status", "memo"}
+        data = {k: request.data.get(k) for k in allowed if k in request.data}
+        if not data and not kwargs.get("partial"):
+            return super().update(request, *args, **kwargs)
+        serializer = self.get_serializer(instance, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs["partial"] = True
+        return self.update(request, *args, **kwargs)
 
 
 @api_view(["GET"])

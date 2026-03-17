@@ -8,6 +8,8 @@ import type { PerformanceTarget, PerformanceTargetFormData, TargetType } from '.
 import { TARGET_TYPES } from '../types/performanceTarget';
 import type { StaffMember } from '../types/staffMember';
 import type { Store } from '../types/customer';
+import type { AdvanceRequest } from '../types/advanceRequest';
+import { ADVANCE_STATUS_LABELS } from '../types/advanceRequest';
 
 const inputClass =
   'mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm focus:border-sakura-300 focus:ring-1 focus:ring-sakura-300 text-sm';
@@ -71,7 +73,18 @@ export default function MyPage() {
   const [salary, setSalary] = useState<MyPageSalary | null>(null);
   const [salaryLoading, setSalaryLoading] = useState(false);
 
+  // 前借申請（金額・伝票添付）
+  const [advanceRequests, setAdvanceRequests] = useState<AdvanceRequest[]>([]);
+  const [advanceLoading, setAdvanceLoading] = useState(false);
+  const [advanceSaving, setAdvanceSaving] = useState(false);
+  const [advanceError, setAdvanceError] = useState<string | null>(null);
+  const [advanceAmount, setAdvanceAmount] = useState('');
+  const [advanceMemo, setAdvanceMemo] = useState('');
+  const [advanceFile, setAdvanceFile] = useState<File | null>(null);
+  const [advanceStatusUpdating, setAdvanceStatusUpdating] = useState<string | null>(null);
+
   const isCast = user?.role === 'Cast';
+  const canApproveAdvance = user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'Admin' || user?.role === 'Owner';
 
   const fetchTargets = () => {
     if (!isCast) return;
@@ -97,6 +110,61 @@ export default function MyPage() {
     setSalaryLoading(true);
     axios.get<MyPageSalary>(`${API}/my-page/salary/`).then((r) => setSalary(r.data)).catch(() => setSalary(null)).finally(() => setSalaryLoading(false));
   }, [isCast]);
+
+  const fetchAdvanceRequests = () => {
+    setAdvanceLoading(true);
+    axios.get<AdvanceRequest[]>(`${API}/advance-requests/`).then((r) => setAdvanceRequests(r.data)).catch(() => setAdvanceRequests([])).finally(() => setAdvanceLoading(false));
+  };
+  useEffect(() => {
+    fetchAdvanceRequests();
+  }, []);
+
+  const myAdvanceRequests = useMemo(() => advanceRequests.filter((a) => a.user === user?.user_id), [advanceRequests, user?.user_id]);
+  const pendingAdvanceRequests = useMemo(() => advanceRequests.filter((a) => a.status === 'Pending' && a.user !== user?.user_id), [advanceRequests, user?.user_id]);
+
+  const handleAdvanceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Math.round(Number(advanceAmount));
+    if (!Number.isFinite(amount) || amount < 1) {
+      setAdvanceError('有効な金額を入力してください。');
+      return;
+    }
+    setAdvanceSaving(true);
+    setAdvanceError(null);
+    try {
+      const formData = new FormData();
+      formData.append('amount', String(amount));
+      formData.append('memo', advanceMemo.trim());
+      if (advanceFile) formData.append('attachment', advanceFile);
+      await axios.post(`${API}/advance-requests/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      fetchAdvanceRequests();
+      setAdvanceAmount('');
+      setAdvanceMemo('');
+      setAdvanceFile(null);
+    } catch {
+      setAdvanceError(ERROR_MESSAGES.create);
+    }
+    setAdvanceSaving(false);
+  };
+
+  const handleAdvanceStatus = async (id: string, newStatus: 'Approved' | 'Rejected') => {
+    setAdvanceStatusUpdating(id);
+    try {
+      await axios.patch(`${API}/advance-requests/${id}/`, { status: newStatus });
+      fetchAdvanceRequests();
+    } catch {
+      setAdvanceError(ERROR_MESSAGES.update);
+    }
+    setAdvanceStatusUpdating(null);
+  };
+
+  function formatDate(iso: string) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? iso : d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
 
   const myStaff = useMemo(() => {
     if (!user?.user_id) return [];
@@ -355,6 +423,101 @@ export default function MyPage() {
             </div>
           </section>
         )}
+
+        {/* 前借申請（金額の申請・前借伝票の添付） */}
+        <section className="mt-6 rounded-2xl border border-gray-100 bg-white shadow-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 bg-sakura-50/50">
+            <h2 className="text-sm font-medium text-gray-700">前借申請</h2>
+          </div>
+          <div className="p-5 space-y-6">
+            <form onSubmit={handleAdvanceSubmit} className="space-y-4 max-w-md">
+              <p className="text-sm text-gray-500">前借希望金額と、任意で前借伝票を添付して申請できます。</p>
+              {advanceError && (
+                <div className="rounded-lg bg-red-50 border border-red-100 px-4 py-2 text-sm text-red-700">{advanceError}</div>
+              )}
+              <div>
+                <label className={labelClass}>前借希望金額（円） *</label>
+                <input type="number" step="1" min="1" value={advanceAmount} onChange={(e) => setAdvanceAmount(e.target.value)} className={inputClass} required />
+              </div>
+              <div>
+                <label className={labelClass}>メモ（任意）</label>
+                <textarea value={advanceMemo} onChange={(e) => setAdvanceMemo(e.target.value)} className={inputClass} rows={2} />
+              </div>
+              <div>
+                <label className={labelClass}>前借伝票の添付（任意）</label>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" onChange={(e) => setAdvanceFile(e.target.files?.[0] ?? null)} className="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-sakura-100 file:text-sakura-800" />
+              </div>
+              <button type="submit" disabled={advanceSaving} className="px-4 py-2 rounded-xl bg-sakura-400 text-white text-sm font-medium hover:bg-sakura-500 disabled:opacity-60">
+                {advanceSaving ? '送信中…' : '申請する'}
+              </button>
+            </form>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">自分の申請一覧</h3>
+              {advanceLoading ? (
+                <p className="text-sm text-gray-500">読み込み中…</p>
+              ) : myAdvanceRequests.length === 0 ? (
+                <p className="text-sm text-gray-500">申請がありません。</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-max text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="py-2 pr-4 font-medium text-gray-700 whitespace-nowrap">申請日</th>
+                        <th className="py-2 pr-4 font-medium text-gray-700 whitespace-nowrap">金額</th>
+                        <th className="py-2 pr-4 font-medium text-gray-700 whitespace-nowrap">状態</th>
+                        <th className="py-2 font-medium text-gray-700 whitespace-nowrap">伝票</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {myAdvanceRequests.map((a) => (
+                        <tr key={a.id} className="border-b border-gray-50">
+                          <td className="py-2 pr-4 text-gray-600 whitespace-nowrap">{formatDate(a.created_at)}</td>
+                          <td className="py-2 pr-4 text-gray-900 whitespace-nowrap">{formatPrice(a.amount)} 円</td>
+                          <td className="py-2 pr-4 whitespace-nowrap">{ADVANCE_STATUS_LABELS[a.status as keyof typeof ADVANCE_STATUS_LABELS] ?? a.status}</td>
+                          <td className="py-2 whitespace-nowrap">
+                            {a.attachment_url ? <a href={a.attachment_url} target="_blank" rel="noopener noreferrer" className="text-sakura-600 hover:underline text-xs">表示</a> : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {canApproveAdvance && pendingAdvanceRequests.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">承認待ち一覧</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-max text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="py-2 pr-4 font-medium text-gray-700 whitespace-nowrap">申請日</th>
+                        <th className="py-2 pr-4 font-medium text-gray-700 whitespace-nowrap">金額</th>
+                        <th className="py-2 pr-4 font-medium text-gray-700 whitespace-nowrap">伝票</th>
+                        <th className="py-2 font-medium text-gray-700 whitespace-nowrap">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingAdvanceRequests.map((a) => (
+                        <tr key={a.id} className="border-b border-gray-50">
+                          <td className="py-2 pr-4 text-gray-600 whitespace-nowrap">{formatDate(a.created_at)}</td>
+                          <td className="py-2 pr-4 text-gray-900 whitespace-nowrap">{formatPrice(a.amount)} 円</td>
+                          <td className="py-2 pr-4 whitespace-nowrap">{a.attachment_url ? <a href={a.attachment_url} target="_blank" rel="noopener noreferrer" className="text-sakura-600 hover:underline text-xs">表示</a> : '—'}</td>
+                          <td className="py-2 whitespace-nowrap">
+                            <button type="button" onClick={() => handleAdvanceStatus(a.id, 'Approved')} disabled={advanceStatusUpdating === a.id} className="text-green-600 hover:underline text-xs mr-2">承認</button>
+                            <button type="button" onClick={() => handleAdvanceStatus(a.id, 'Rejected')} disabled={advanceStatusUpdating === a.id} className="text-red-600 hover:underline text-xs">却下</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Account settings */}
         <section className="mt-6 rounded-2xl border border-gray-100 bg-white shadow-card overflow-hidden">
