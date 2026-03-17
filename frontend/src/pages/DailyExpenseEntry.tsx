@@ -69,6 +69,7 @@ export default function DailyExpenseEntry() {
   const [visitRecords, setVisitRecords] = useState<VisitRecord[]>([]);
   const [storeId, setStoreId] = useState('');
   const [reportDate, setReportDate] = useState(todayISO());
+  const [storeEnteredSales, setStoreEnteredSales] = useState('');
   const [totalExpenses, setTotalExpenses] = useState('');
   const [laborCosts, setLaborCosts] = useState('');
   const [notes, setNotes] = useState('');
@@ -113,6 +114,7 @@ export default function DailyExpenseEntry() {
     setError(null);
     setEditId(null);
     setReportDate(todayISO());
+    setStoreEnteredSales('');
     setTotalExpenses('');
     setLaborCosts('');
     setNotes('');
@@ -124,6 +126,8 @@ export default function DailyExpenseEntry() {
     setEditId(s.id);
     setStoreId(s.store);
     setReportDate(s.report_date);
+    const sales = Number(s.total_sales);
+    setStoreEnteredSales(Number.isNaN(sales) ? '' : String(Math.round(sales)));
     const exp = Number(s.total_expenses);
     const labor = Number(s.labor_costs);
     setTotalExpenses(Number.isNaN(exp) ? '' : String(Math.round(exp)));
@@ -145,13 +149,13 @@ export default function DailyExpenseEntry() {
     setSuccess(false);
     const expenses = Math.round(Number(totalExpenses.trim() || 0));
     const labor = Math.round(Number(laborCosts.trim() || 0));
-    const totalSales = String(Math.round(computedTotalSales));
+    const totalSales = storeEnteredSales.trim() !== '' ? Math.round(Number(storeEnteredSales)) : Math.round(computedTotalSales);
     try {
       if (editId) {
         await axios.patch(`${API}/daily-summaries/${editId}/`, {
           store: storeId,
           report_date: reportDate,
-          total_sales: totalSales,
+          total_sales: String(totalSales),
           total_expenses: String(expenses),
           labor_costs: String(labor),
           notes: notes.trim(),
@@ -162,7 +166,7 @@ export default function DailyExpenseEntry() {
           await axios.patch(`${API}/daily-summaries/${existing.id}/`, {
             store: existing.store,
             report_date: existing.report_date,
-            total_sales: totalSales,
+            total_sales: String(totalSales),
             total_expenses: String(expenses),
             labor_costs: String(labor),
             notes: notes.trim(),
@@ -171,7 +175,7 @@ export default function DailyExpenseEntry() {
           await axios.post(`${API}/daily-summaries/`, {
             store: storeId,
             report_date: reportDate,
-            total_sales: totalSales,
+            total_sales: String(totalSales),
             total_expenses: String(expenses),
             labor_costs: String(labor),
             notes: notes.trim(),
@@ -199,6 +203,28 @@ export default function DailyExpenseEntry() {
   };
 
   const recentSummaries = [...summaries].sort((a, b) => b.report_date.localeCompare(a.report_date)).slice(0, 20);
+
+  /** Cast-computed sales by (storeId, report_date) for table comparison. */
+  const castSalesByStoreAndDate = useMemo(() => {
+    const map = new Map<string, number>();
+    const customerToStore = new Map<string, string>();
+    customers.forEach((c) => customerToStore.set(c.id, c.store));
+    visitRecords.forEach((r) => {
+      const storeId = customerToStore.get(r.customer);
+      if (storeId == null) return;
+      const key = `${storeId}\t${r.visit_date}`;
+      map.set(key, (map.get(key) ?? 0) + Number(r.spending || 0));
+    });
+    return map;
+  }, [customers, visitRecords]);
+
+  const getCastSales = (storeId: string, reportDate: string) => castSalesByStoreAndDate.get(`${storeId}\t${reportDate}`) ?? 0;
+  const isSalesMismatch = (s: DailySummary) => {
+    const storeEntered = Number(s.total_sales);
+    const castSum = getCastSales(s.store, s.report_date);
+    if (Number.isNaN(storeEntered)) return castSum !== 0;
+    return storeEntered !== castSum;
+  };
 
   return (
     <div className="min-h-screen bg-sky-50/80">
@@ -242,7 +268,8 @@ export default function DailyExpenseEntry() {
                   <tr className="border-b border-gray-100 bg-gray-50/80">
                     <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">店舗</th>
                     <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">対象日</th>
-                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">売上（円）</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">売上（店舗入力）</th>
+                    <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">売上（キャスト集計）</th>
                     <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">経費（円）</th>
                     <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">人件費（円）</th>
                     <th className="px-2 sm:px-4 py-3 font-medium text-gray-700 whitespace-nowrap">備考</th>
@@ -251,13 +278,20 @@ export default function DailyExpenseEntry() {
                 </thead>
                 <tbody>
                   {recentSummaries.length === 0 ? (
-                    <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-500">データがありません</td></tr>
+                    <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-500">データがありません</td></tr>
                   ) : (
-                    recentSummaries.map((s) => (
-                      <tr key={s.id} className="border-b border-gray-50 hover:bg-sky-50/30">
+                    recentSummaries.map((s) => {
+                      const mismatch = isSalesMismatch(s);
+                      const castSum = getCastSales(s.store, s.report_date);
+                      return (
+                      <tr key={s.id} className={`border-b border-gray-50 hover:bg-sky-50/30 ${mismatch ? 'bg-amber-50/80 border-l-4 border-l-amber-400' : ''}`}>
                         <td className="px-2 sm:px-4 py-3 text-gray-900 whitespace-nowrap">{storeName(s.store)}</td>
                         <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{s.report_date}</td>
                         <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(s.total_sales)}</td>
+                        <td className={`px-2 sm:px-4 py-3 whitespace-nowrap ${mismatch ? 'text-amber-700 font-medium' : 'text-gray-600'}`}>
+                          {formatPrice(castSum)}
+                          {mismatch && <span className="ml-1 text-xs text-amber-600">相違</span>}
+                        </td>
                         <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(s.total_expenses)}</td>
                         <td className="px-2 sm:px-4 py-3 text-gray-600 whitespace-nowrap">{formatPrice(s.labor_costs)}</td>
                         <td className="px-2 sm:px-4 py-3 text-gray-500 max-w-[240px] truncate" title={s.notes || undefined}>{s.notes || '—'}</td>
@@ -275,7 +309,7 @@ export default function DailyExpenseEntry() {
                           </div>
                         </td>
                       </tr>
-                    ))
+                    ); })
                   )}
                 </tbody>
               </table>
@@ -301,10 +335,15 @@ export default function DailyExpenseEntry() {
                   <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className={inputClass} required />
                 </div>
                 <div>
-                  <label className={labelClass}>売上合計（円）</label>
+                  <label className={labelClass}>キャスト集計（来店記録の利用額合計）</label>
                   <div className="mt-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800">
-                    {formatPrice(computedTotalSales)}（来店記録の利用額の合計）
+                    {formatPrice(computedTotalSales)} 円
                   </div>
+                </div>
+                <div>
+                  <label className={labelClass}>売上合計（店舗入力・円）</label>
+                  <p className="text-xs text-gray-500 mt-0.5">店舗で入力した売上。未入力の場合はキャスト集計で保存されます。</p>
+                  <input type="number" step="1" min="0" value={storeEnteredSales} onChange={(e) => setStoreEnteredSales(e.target.value)} className={inputClass} placeholder={String(Math.round(computedTotalSales))} />
                 </div>
                 <div>
                   <label className={labelClass}>経費合計（円） *</label>
