@@ -11,6 +11,7 @@ from .models import (
     DailySummary,
     PerformanceTarget,
     StaffMember,
+    StoreTarget,
     Store,
     VisitRecord,
 )
@@ -160,6 +161,24 @@ class DailySummarySerializer(serializers.ModelSerializer):
         model = DailySummary
         fields = ["id", "store", "report_date", "total_sales", "total_expenses", "labor_costs", "notes"]
         read_only_fields = ["id"]
+
+
+class StoreTargetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreTarget
+        fields = [
+            "id",
+            "store",
+            "target_type",
+            "target_date",
+            "sales_target",
+            "group_target",
+            "new_sales_target",
+            "new_group_target",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 class AdvanceRequestSerializer(serializers.ModelSerializer):

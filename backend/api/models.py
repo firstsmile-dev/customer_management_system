@@ -136,6 +136,46 @@ class PerformanceTarget(models.Model):
         db_table = "performance_targets"
 
 
+class StoreTarget(models.Model):
+    """
+    店舗目標: 売上目標、組数目標、新規売上、新規組数（新規=customers.first_visitが対象期間内）。
+    """
+
+    class TargetType(models.TextChoices):
+        DAILY = "Daily", "Daily"
+        MONTHLY = "Monthly", "Monthly"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    store = models.ForeignKey(
+        Store,
+        on_delete=models.CASCADE,
+        db_column="store_id",
+        related_name="store_targets",
+    )
+    target_type = models.CharField(
+        max_length=255,
+        choices=TargetType.choices,
+    )
+    target_date = models.DateField()
+
+    sales_target = models.BigIntegerField(default=0)
+    group_target = models.BigIntegerField(default=0)
+    new_sales_target = models.BigIntegerField(default=0)
+    new_group_target = models.BigIntegerField(default=0)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "store_targets"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["store", "target_type", "target_date"],
+                name="uniq_store_target_per_period",
+            )
+        ]
+
+
 class Customer(models.Model):
     """
     Maps to `customers`.

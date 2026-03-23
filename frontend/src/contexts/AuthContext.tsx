@@ -9,11 +9,11 @@ const STORAGE_USER = 'cms_user';
 /** Paths allowed per role. Admin and Owner can access all. Supervisor = Manager + view all stores. */
 const ROLE_PATHS: Record<string, string[]> = {
   Cast: ['/', '/customers', '/customers/register', '/visit-records', '/my-page'],
-  Staff: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/my-page', '/performance-targets'],
-  Manager: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/stores', '/my-page', '/performance-targets'],
-  Supervisor: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/stores', '/my-page', '/performance-targets'],
-  Admin: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets'],
-  Owner: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets'],
+  Staff: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/my-page', '/performance-targets', '/store-targets'],
+  Manager: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets'],
+  Supervisor: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets'],
+  Admin: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets', '/store-targets'],
+  Owner: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets', '/store-targets'],
 };
 
 function getStoredUser(): AuthUser | null {

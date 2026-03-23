@@ -19,6 +19,7 @@ from .models import (
     DailySummary,
     PerformanceTarget,
     StaffMember,
+    StoreTarget,
     Store,
     VisitRecord,
 )
@@ -31,6 +32,7 @@ from .serializers import (
     DailySummarySerializer,
     PerformanceTargetSerializer,
     StaffMemberSerializer,
+    StoreTargetSerializer,
     StoreSerializer,
     UserSerializer,
     VisitRecordSerializer,
@@ -522,6 +524,36 @@ class DailySummaryViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         if not _is_admin_or_owner(request) and request.data.get("store") is not None:
             err = _ensure_store_for_non_admin(request, request.data.get("store"), "daily summary update")
+            if err is not None:
+                return err
+        return super().update(request, *args, **kwargs)
+
+
+class StoreTargetViewSet(viewsets.ModelViewSet):
+    """CRUD for store targets. Admin/Owner: all. Others: only their store(s)."""
+
+    queryset = StoreTarget.objects.all()
+    serializer_class = StoreTargetSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
+            return qs
+        if not store_ids:
+            return qs.none()
+        return qs.filter(store_id__in=store_ids)
+
+    def create(self, request, *args, **kwargs):
+        store_id = request.data.get("store")
+        err = _ensure_store_for_non_admin(request, store_id, "store target creation")
+        if err is not None:
+            return err
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        if not _is_admin_or_owner(request) and request.data.get("store") is not None:
+            err = _ensure_store_for_non_admin(request, request.data.get("store"), "store target update")
             if err is not None:
                 return err
         return super().update(request, *args, **kwargs)

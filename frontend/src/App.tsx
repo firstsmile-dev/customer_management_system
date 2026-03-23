@@ -16,6 +16,7 @@ import UserList from './pages/UserList';
 import StaffMemberList from './pages/StaffMemberList';
 import MyPage from './pages/MyPage';
 import PerformanceTargetList from './pages/PerformanceTargetList';
+import StoreTargetList from './pages/StoreTargetList';
 
 const HamburgerIcon = ({ open }: { open: boolean }) => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -37,6 +38,7 @@ function Nav() {
     { to: '/', label: 'ホーム' },
     { to: '/my-page', label: 'マイページ' },
     { to: '/performance-targets', label: '売上目標' },
+    { to: '/store-targets', label: '店舗目標' },
     { to: '/customers', label: 'お客様一覧' },
     { to: '/customers/register', label: 'お客様登録' },
     { to: '/visit-records', label: '来店記録' },
@@ -160,6 +162,7 @@ function AppContent() {
         <Route path="/visit-records" element={<ProtectedRoute><VisitRecordList /></ProtectedRoute>} />
         <Route path="/daily-sales" element={<ProtectedRoute><DailySalesEntry /></ProtectedRoute>} />
         <Route path="/daily-expenses" element={<ProtectedRoute><DailyExpenseEntry /></ProtectedRoute>} />
+          <Route path="/store-targets" element={<ProtectedRoute><StoreTargetList /></ProtectedRoute>} />
         <Route path="/stores" element={<ProtectedRoute><StoreList /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
         <Route path="/staff-members" element={<ProtectedRoute><StaffMemberList /></ProtectedRoute>} />

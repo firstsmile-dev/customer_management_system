@@ -16,6 +16,7 @@ router.register(r"customer-preferences", views.CustomerPreferenceViewSet, basena
 router.register(r"performance-targets", views.PerformanceTargetViewSet, basename="performance-target")
 router.register(r"daily-summaries", views.DailySummaryViewSet, basename="daily-summary")
 router.register(r"advance-requests", views.AdvanceRequestViewSet, basename="advance-request")
+router.register(r"store-targets", views.StoreTargetViewSet, basename="store-target")
 
 urlpatterns = [
     path("", views.api_home),
