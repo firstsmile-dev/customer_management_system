@@ -3,7 +3,7 @@ from django.db import IntegrityError
 from django.db.models import Count, Q, Sum
 from rest_framework import status, viewsets
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -20,6 +20,7 @@ from .models import (
     CustomerProfile,
     DailySummary,
     DailyReport,
+    HostSalarySetting,
     PerformanceTarget,
     StaffMember,
     StoreTarget,
@@ -34,6 +35,7 @@ from .serializers import (
     CustomerSerializer,
     DailySummarySerializer,
     DailyReportSerializer,
+    HostSalarySettingSerializer,
     PerformanceTargetSerializer,
     StaffMemberSerializer,
     StoreTargetSerializer,
@@ -945,6 +947,104 @@ def monthly_store_rankings(request):
             "month": month,
             "overall": overall,
             "by_store": base_rows,
+        }
+    )
+
+
+def _require_manager_host_store(request):
+    cms_user = _get_request_cms_user(request)
+    if not cms_user:
+        return None, Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+    role = _get_request_user_role(request)
+    if role != "Manager":
+        return None, Response({"detail": "この設定はマネージャーのみ利用できます。"}, status=status.HTTP_403_FORBIDDEN)
+    store = getattr(cms_user, "store", None)
+    if store is None:
+        return None, Response({"detail": "店舗が設定されていません。"}, status=status.HTTP_400_BAD_REQUEST)
+    if store.store_type != Store.StoreType.HOST_CLUB:
+        return None, Response({"detail": "ホストクラブ店舗のみ設定できます。"}, status=status.HTTP_403_FORBIDDEN)
+    return store, None
+
+
+def _round_yen(value: Decimal, mode: str) -> int:
+    if mode == HostSalarySetting.RoundingMode.FLOOR:
+        q = value.quantize(Decimal("1"), rounding=ROUND_FLOOR)
+    elif mode == HostSalarySetting.RoundingMode.CEIL:
+        q = value.quantize(Decimal("1"), rounding=ROUND_CEILING)
+    else:
+        q = value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    return int(q)
+
+
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
+def host_salary_settings(request):
+    """
+    ホストクラブの給与計算用設定（小計/総売上）。マネージャーのみ。
+    """
+    store, err = _require_manager_host_store(request)
+    if err is not None:
+        return err
+
+    setting, _ = HostSalarySetting.objects.get_or_create(store=store)
+    if request.method == "GET":
+        return Response(HostSalarySettingSerializer(setting).data)
+
+    serializer = HostSalarySettingSerializer(setting, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def host_salary_settings_preview(request):
+    """
+    当月(または指定月)の総売上/小計の計算プレビュー。マネージャーのみ。
+    query: year, month（省略時は当月）
+    """
+    store, err = _require_manager_host_store(request)
+    if err is not None:
+        return err
+
+    setting, _ = HostSalarySetting.objects.get_or_create(store=store)
+
+    today = date.today()
+    try:
+        year = int(request.query_params.get("year", today.year))
+        month = int(request.query_params.get("month", today.month))
+    except (TypeError, ValueError):
+        return Response({"detail": "year と month は整数で指定してください。"}, status=status.HTTP_400_BAD_REQUEST)
+    if month < 1 or month > 12 or year < 2000 or year > 2100:
+        return Response({"detail": "無効な年月です。"}, status=status.HTTP_400_BAD_REQUEST)
+
+    agg = VisitRecord.objects.filter(
+        customer__store=store, visit_date__year=year, visit_date__month=month
+    ).aggregate(t=Sum("spending"), c=Count("id"))
+    total_sales = Decimal(int(agg["t"] or 0))
+    groups = int(agg["c"] or 0)
+
+    multiplier = Decimal("1") + Decimal(setting.tax_rate) + Decimal(setting.service_rate)
+    if multiplier <= 0:
+        subtotal = 0
+        total_from_subtotal = 0
+    else:
+        subtotal = _round_yen(total_sales / multiplier, setting.rounding_mode)
+        total_from_subtotal = _round_yen(Decimal(subtotal) * multiplier, setting.rounding_mode)
+
+    return Response(
+        {
+            "year": year,
+            "month": month,
+            "store_id": str(store.id),
+            "store_name": store.name,
+            "tax_rate": str(setting.tax_rate),
+            "service_rate": str(setting.service_rate),
+            "rounding_mode": setting.rounding_mode,
+            "groups": groups,
+            "total_sales": int(total_sales),
+            "subtotal_estimated": subtotal,
+            "total_from_subtotal_estimated": total_from_subtotal,
         }
     )
 

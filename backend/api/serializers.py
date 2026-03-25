@@ -10,6 +10,7 @@ from .models import (
     CustomerPreference,
     CustomerProfile,
     DailySummary,
+    HostSalarySetting,
     PerformanceTarget,
     StaffMember,
     StoreTarget,
@@ -187,6 +188,13 @@ class StoreTargetSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class HostSalarySettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HostSalarySetting
+        fields = ["id", "store", "tax_rate", "service_rate", "rounding_mode", "updated_at"]
+        read_only_fields = ["id", "store", "updated_at"]
 
 
 class AdvanceRequestSerializer(serializers.ModelSerializer):

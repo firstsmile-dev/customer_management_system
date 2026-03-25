@@ -28,5 +28,7 @@ urlpatterns = [
     path("my-page/salary/", views.my_page_salary),
     path("store-cast-overview/", views.store_cast_overview),
     path("monthly-store-rankings/", views.monthly_store_rankings),
+    path("host-salary-settings/", views.host_salary_settings),
+    path("host-salary-settings/preview/", views.host_salary_settings_preview),
     path("", include(router.urls)),
 ]

@@ -176,6 +176,39 @@ class StoreTarget(models.Model):
         ]
 
 
+class HostSalarySetting(models.Model):
+    """
+    ホストクラブ向け: 小計/総売上の計算に使う設定（店舗ごとに1件）。
+
+    - 総売上(total) = 小計(subtotal) × (1 + 税率 + サービス料率)
+    - 小計(subtotal) = 総売上(total) ÷ (1 + 税率 + サービス料率)
+    """
+
+    class RoundingMode(models.TextChoices):
+        ROUND = "Round", "Round"
+        FLOOR = "Floor", "Floor"
+        CEIL = "Ceil", "Ceil"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    store = models.OneToOneField(
+        Store,
+        on_delete=models.CASCADE,
+        db_column="store_id",
+        related_name="host_salary_setting",
+    )
+    tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0.10)  # 例: 0.1000 = 10%
+    service_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0.20)  # 例: 0.2000 = 20%
+    rounding_mode = models.CharField(
+        max_length=255,
+        choices=RoundingMode.choices,
+        default=RoundingMode.ROUND,
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "host_salary_settings"
+
+
 class Customer(models.Model):
     """
     Maps to `customers`.
