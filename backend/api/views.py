@@ -1,6 +1,6 @@
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError
-from django.db.models import Sum
+from django.db.models import Count, Q, Sum
 from rest_framework import status, viewsets
 from datetime import date
 from decimal import Decimal
@@ -841,6 +841,112 @@ def store_cast_overview(request):
         )
 
     return Response({"casts": casts_out})
+
+
+def _competition_ranks(rows, metric_key: str, rank_key: str) -> None:
+    """Assign competition ranks (1,1,3…) by metric descending, then store_name."""
+    sorted_rows = sorted(rows, key=lambda r: (-r[metric_key], r["store_name"]))
+    rank = 1
+    for i, row in enumerate(sorted_rows):
+        if i > 0 and row[metric_key] < sorted_rows[i - 1][metric_key]:
+            rank = i + 1
+        row[rank_key] = rank
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def monthly_store_rankings(request):
+    """
+    当月の店舗別ランキング（オーナー・管理者向け）。
+    売上=来店の利用額合計、組数=来店件数、新規組数=初回日が当月内のお客様の来店件数（店舗目標画面と同じ定義）。
+    クエリ: year, month（省略時は当月）。全体=全店合計。
+    """
+    role = _get_request_user_role(request)
+    if role not in ("Owner", "Admin"):
+        return Response(
+            {"detail": "このレポートはオーナー・管理者のみ利用できます。"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    cms_user = _get_request_cms_user(request)
+    if not cms_user:
+        return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    today = date.today()
+    try:
+        year = int(request.query_params.get("year", today.year))
+        month = int(request.query_params.get("month", today.month))
+    except (TypeError, ValueError):
+        return Response(
+            {"detail": "year と month は整数で指定してください。"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if month < 1 or month > 12 or year < 2000 or year > 2100:
+        return Response(
+            {"detail": "無効な年月です。"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    visit_agg = (
+        VisitRecord.objects.filter(visit_date__year=year, visit_date__month=month)
+        .values("customer__store_id", "customer__store__name")
+        .annotate(
+            sales=Sum("spending"),
+            groups=Count("id"),
+            new_groups=Count(
+                "id",
+                filter=Q(
+                    customer__first_visit__year=year,
+                    customer__first_visit__month=month,
+                ),
+            ),
+        )
+    )
+    by_store = {}
+    for row in visit_agg:
+        sid = row["customer__store_id"]
+        by_store[sid] = {
+            "store_id": str(sid),
+            "store_name": row["customer__store__name"] or "",
+            "sales": int(row["sales"] or 0),
+            "groups": int(row["groups"] or 0),
+            "new_groups": int(row["new_groups"] or 0),
+        }
+
+    base_rows = []
+    for store in Store.objects.filter(is_active=True).order_by("name"):
+        sid = store.id
+        d = by_store.get(sid)
+        if d:
+            base_rows.append(dict(d))
+        else:
+            base_rows.append(
+                {
+                    "store_id": str(sid),
+                    "store_name": store.name,
+                    "sales": 0,
+                    "groups": 0,
+                    "new_groups": 0,
+                }
+            )
+
+    _competition_ranks(base_rows, "sales", "rank_sales")
+    _competition_ranks(base_rows, "groups", "rank_groups")
+    _competition_ranks(base_rows, "new_groups", "rank_new_groups")
+
+    overall = {
+        "sales_total": sum(r["sales"] for r in base_rows),
+        "groups_total": sum(r["groups"] for r in base_rows),
+        "new_groups_total": sum(r["new_groups"] for r in base_rows),
+    }
+
+    return Response(
+        {
+            "year": year,
+            "month": month,
+            "overall": overall,
+            "by_store": base_rows,
+        }
+    )
 
 
 @api_view(["POST"])

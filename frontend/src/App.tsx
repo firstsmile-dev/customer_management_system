@@ -19,6 +19,7 @@ import MyPage from './pages/MyPage';
 import PerformanceTargetList from './pages/PerformanceTargetList';
 import StoreTargetList from './pages/StoreTargetList';
 import StoreCastOverview from './pages/StoreCastOverview';
+import MonthlyStoreRankings from './pages/MonthlyStoreRankings';
 import type { AuthUser } from './types/auth';
 
 const NAV_LINKS: { to: string; label: string }[] = [
@@ -36,6 +37,7 @@ const NAV_LINKS: { to: string; label: string }[] = [
   { to: '/stores', label: '店舗管理' },
   { to: '/users', label: 'ユーザー管理' },
   { to: '/staff-members', label: 'スタッフ管理' },
+  { to: '/monthly-rankings', label: '当月ランキング' },
 ];
 
 function SidebarLayout({ children, user }: { children: React.ReactNode; user: AuthUser }) {
@@ -170,6 +172,7 @@ function AppContent() {
       <Route path="/my-page" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
       <Route path="/performance-targets" element={<ProtectedRoute><PerformanceTargetList /></ProtectedRoute>} />
       <Route path="/store-cast-overview" element={<ProtectedRoute><StoreCastOverview /></ProtectedRoute>} />
+      <Route path="/monthly-rankings" element={<ProtectedRoute><MonthlyStoreRankings /></ProtectedRoute>} />
     </Routes>
   );
 

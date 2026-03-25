@@ -12,8 +12,8 @@ const ROLE_PATHS: Record<string, string[]> = {
   Staff: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/my-page', '/performance-targets', '/store-targets', '/store-cast-overview'],
   Manager: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets', '/store-cast-overview'],
   Supervisor: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets'],
-  Admin: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets', '/store-targets'],
-  Owner: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets', '/store-targets'],
+  Admin: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets', '/store-targets', '/monthly-rankings'],
+  Owner: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets', '/store-targets', '/monthly-rankings'],
 };
 
 function getStoredUser(): AuthUser | null {
