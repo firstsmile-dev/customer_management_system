@@ -9,8 +9,8 @@ const STORAGE_USER = 'cms_user';
 /** Paths allowed per role. Admin and Owner can access all. Supervisor = Manager + view all stores. */
 const ROLE_PATHS: Record<string, string[]> = {
   Cast: ['/', '/customers', '/customers/register', '/visit-records', '/my-page'],
-  Staff: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/my-page', '/performance-targets', '/store-targets'],
-  Manager: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets'],
+  Staff: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/my-page', '/performance-targets', '/store-targets', '/store-cast-overview'],
+  Manager: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets', '/store-cast-overview'],
   Supervisor: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets'],
   Admin: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets', '/store-targets'],
   Owner: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/stores', '/users', '/staff-members', '/my-page', '/performance-targets', '/store-targets'],

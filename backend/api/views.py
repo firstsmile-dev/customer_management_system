@@ -1,5 +1,6 @@
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError
+from django.db.models import Sum
 from rest_framework import status, viewsets
 from datetime import date
 from decimal import Decimal
@@ -747,6 +748,99 @@ def my_page_salary(request):
         "current_month_commission": int(round(current_commission)),
         "last_month_commission": int(round(last_commission)),
     })
+
+
+def _commission_for_staff_month(cast_staff, year: int, month: int) -> int:
+    agg = VisitRecord.objects.filter(
+        cast=cast_staff, visit_date__year=year, visit_date__month=month
+    ).aggregate(t=Sum("spending"))
+    spending_sum = int(agg["t"] or 0)
+    return int(round(spending_sum * (cast_staff.commission_rate / 100)))
+
+
+def _achieved_sales_for_performance_target(cast_staff, target: PerformanceTarget) -> int:
+    if target.target_type == PerformanceTarget.TargetType.DAILY:
+        agg = VisitRecord.objects.filter(cast=cast_staff, visit_date=target.target_date).aggregate(
+            t=Sum("spending")
+        )
+    else:
+        y, m = target.target_date.year, target.target_date.month
+        agg = VisitRecord.objects.filter(
+            cast=cast_staff, visit_date__year=y, visit_date__month=m
+        ).aggregate(t=Sum("spending"))
+    return int(agg["t"] or 0)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def store_cast_overview(request):
+    """
+    店舗キャストの目標達成率・給与（歩合・時給）一覧。スタッフ・マネージャーのみ。
+    達成額=来店記録の利用額合計（対象期間内）。歩合=利用額×歩合率の合計。
+    """
+    role = _get_request_user_role(request)
+    if role not in ("Staff", "Manager"):
+        return Response(
+            {"detail": "この一覧はスタッフ・マネージャーのみ利用できます。"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    cms_user = _get_request_cms_user(request)
+    if not cms_user:
+        return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    store_ids = _get_request_user_store_ids(request)
+    if store_ids is None or len(store_ids) == 0:
+        return Response({"casts": []})
+
+    staff_rows = (
+        StaffMember.objects.filter(store_id__in=store_ids, user__role=CmsUser.Role.CAST)
+        .select_related("user", "store")
+        .order_by("store__name", "user__email")
+    )
+
+    today = date.today()
+    cy, cm = today.year, today.month
+    if cm == 1:
+        ly, lm = cy - 1, 12
+    else:
+        ly, lm = cy, cm - 1
+
+    casts_out = []
+    for sm in staff_rows:
+        hourly = int(Decimal(sm.hourly_wage))
+        targets_data = []
+        for t in PerformanceTarget.objects.filter(staff=sm).order_by("-target_date")[:40]:
+            achieved = _achieved_sales_for_performance_target(sm, t)
+            tgt = int(Decimal(t.target_amount))
+            pct = None
+            if tgt > 0:
+                pct = int(round(100.0 * achieved / tgt))
+            targets_data.append(
+                {
+                    "id": str(t.id),
+                    "target_type": t.target_type,
+                    "target_date": str(t.target_date),
+                    "target_amount": tgt,
+                    "achieved_amount": achieved,
+                    "achievement_percent": pct,
+                }
+            )
+        casts_out.append(
+            {
+                "staff_id": str(sm.id),
+                "user_id": str(sm.user_id),
+                "email": sm.user.email,
+                "username": sm.user.username or "",
+                "store_id": str(sm.store_id),
+                "store_name": sm.store.name,
+                "hourly_wage": hourly,
+                "current_month_commission": _commission_for_staff_month(sm, cy, cm),
+                "last_month_commission": _commission_for_staff_month(sm, ly, lm),
+                "targets": targets_data,
+            }
+        )
+
+    return Response({"casts": casts_out})
 
 
 @api_view(["POST"])

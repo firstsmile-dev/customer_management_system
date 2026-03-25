@@ -18,6 +18,7 @@ import StaffMemberList from './pages/StaffMemberList';
 import MyPage from './pages/MyPage';
 import PerformanceTargetList from './pages/PerformanceTargetList';
 import StoreTargetList from './pages/StoreTargetList';
+import StoreCastOverview from './pages/StoreCastOverview';
 
 const HamburgerIcon = ({ open }: { open: boolean }) => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -40,6 +41,7 @@ function Nav() {
     { to: '/my-page', label: 'マイページ' },
     { to: '/performance-targets', label: '売上目標' },
     { to: '/store-targets', label: '店舗目標' },
+    { to: '/store-cast-overview', label: 'キャスト状況' },
     { to: '/customers', label: 'お客様一覧' },
     { to: '/customers/register', label: 'お客様登録' },
     { to: '/visit-records', label: '来店記録' },
@@ -171,6 +173,7 @@ function AppContent() {
         <Route path="/staff-members" element={<ProtectedRoute><StaffMemberList /></ProtectedRoute>} />
         <Route path="/my-page" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
         <Route path="/performance-targets" element={<ProtectedRoute><PerformanceTargetList /></ProtectedRoute>} />
+        <Route path="/store-cast-overview" element={<ProtectedRoute><StoreCastOverview /></ProtectedRoute>} />
       </Routes>
     </div>
   );

@@ -26,5 +26,6 @@ urlpatterns = [
     path("auth/register/", views.register),
     path("auth/refresh/", TokenRefreshView.as_view()),
     path("my-page/salary/", views.my_page_salary),
+    path("store-cast-overview/", views.store_cast_overview),
     path("", include(router.urls)),
 ]
