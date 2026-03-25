@@ -266,6 +266,42 @@ class DailySummary(models.Model):
         db_table = "daily_summaries"
 
 
+class DailyReport(models.Model):
+    """
+    店舗日報: 1店舗・1日につき1件。作成はスタッフ/マネージャー（管理者・オーナーは全権限）。
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    store = models.ForeignKey(
+        Store,
+        on_delete=models.CASCADE,
+        db_column="store_id",
+        related_name="daily_reports",
+    )
+    report_date = models.DateField()
+    content = models.TextField(blank=True, default="")
+    created_by = models.ForeignKey(
+        CmsUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="created_by_id",
+        related_name="daily_reports_created",
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "daily_reports"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["store", "report_date"],
+                name="uniq_daily_report_store_date",
+            )
+        ]
+        ordering = ["-report_date", "store_id"]
+
+
 class CustomerProfile(models.Model):
     """
     Maps to `customers_profile`.

@@ -4,6 +4,7 @@ from rest_framework import serializers
 from .models import (
     AdvanceRequest,
     CmsUser,
+    DailyReport,
     Customer,
     CustomerDetail,
     CustomerPreference,
@@ -161,6 +162,13 @@ class DailySummarySerializer(serializers.ModelSerializer):
         model = DailySummary
         fields = ["id", "store", "report_date", "total_sales", "total_expenses", "labor_costs", "notes"]
         read_only_fields = ["id"]
+
+
+class DailyReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyReport
+        fields = ["id", "store", "report_date", "content", "created_by", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_by", "created_at", "updated_at"]
 
 
 class StoreTargetSerializer(serializers.ModelSerializer):

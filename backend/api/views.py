@@ -1,4 +1,5 @@
 from django.contrib.auth.hashers import check_password, make_password
+from django.db import IntegrityError
 from rest_framework import status, viewsets
 from datetime import date
 from decimal import Decimal
@@ -17,6 +18,7 @@ from .models import (
     CustomerPreference,
     CustomerProfile,
     DailySummary,
+    DailyReport,
     PerformanceTarget,
     StaffMember,
     StoreTarget,
@@ -30,6 +32,7 @@ from .serializers import (
     CustomerProfileSerializer,
     CustomerSerializer,
     DailySummarySerializer,
+    DailyReportSerializer,
     PerformanceTargetSerializer,
     StaffMemberSerializer,
     StoreTargetSerializer,
@@ -101,6 +104,12 @@ def _is_supervisor(request):
     if cms_user is None:
         return False
     return getattr(cms_user, "role", None) == "Supervisor"
+
+
+def _can_write_daily_report(request):
+    """日報の作成・編集・削除: スタッフ・マネージャー・管理者・オーナーのみ（キャスト・統括は閲覧のみ）。"""
+    role = _get_request_user_role(request)
+    return role in ("Staff", "Manager", "Admin", "Owner")
 
 
 def _ensure_store_for_non_admin(request, store_id, action_label="this action"):
@@ -527,6 +536,74 @@ class DailySummaryViewSet(viewsets.ModelViewSet):
             if err is not None:
                 return err
         return super().update(request, *args, **kwargs)
+
+
+class DailyReportViewSet(viewsets.ModelViewSet):
+    """
+    店舗日報: 1店舗・1日1件。閲覧は店舗権限内。作成・更新・削除はスタッフ/マネージャー/管理者/オーナーのみ。
+    """
+
+    queryset = DailyReport.objects.all()
+    serializer_class = DailyReportSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if _get_request_user_role(self.request) == "Cast":
+            return qs.none()
+        store_ids = _get_request_user_store_ids(self.request)
+        if store_ids is None:
+            return qs
+        if not store_ids:
+            return qs.none()
+        return qs.filter(store_id__in=store_ids)
+
+    def perform_create(self, serializer):
+        cms_user = _get_request_cms_user(self.request)
+        serializer.save(created_by=cms_user)
+
+    def create(self, request, *args, **kwargs):
+        if not _can_write_daily_report(request):
+            return Response(
+                {"detail": "Only staff, managers, administrators, or owners can create daily reports."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        store_id = request.data.get("store")
+        err = _ensure_store_for_non_admin(request, store_id, "daily report creation")
+        if err is not None:
+            return err
+        try:
+            return super().create(request, *args, **kwargs)
+        except IntegrityError:
+            return Response(
+                {"detail": "この店舗・日付の日報は既に登録されています。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def update(self, request, *args, **kwargs):
+        if not _can_write_daily_report(request):
+            return Response(
+                {"detail": "Only staff, managers, administrators, or owners can update daily reports."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not _is_admin_or_owner(request) and request.data.get("store") is not None:
+            err = _ensure_store_for_non_admin(request, request.data.get("store"), "daily report update")
+            if err is not None:
+                return err
+        try:
+            return super().update(request, *args, **kwargs)
+        except IntegrityError:
+            return Response(
+                {"detail": "この店舗・日付の組み合わせは既に別の日報で使用されています。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def destroy(self, request, *args, **kwargs):
+        if not _can_write_daily_report(request):
+            return Response(
+                {"detail": "Only staff, managers, administrators, or owners can delete daily reports."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class StoreTargetViewSet(viewsets.ModelViewSet):

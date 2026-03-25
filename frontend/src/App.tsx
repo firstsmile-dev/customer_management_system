@@ -11,6 +11,7 @@ import CustomerRegistration from './pages/CustomerRegistration';
 import VisitRecordList from './pages/VisitRecordList';
 import DailySalesEntry from './pages/DailySalesEntry';
 import DailyExpenseEntry from './pages/DailyExpenseEntry';
+import DailyReportList from './pages/DailyReportList';
 import StoreList from './pages/StoreList';
 import UserList from './pages/UserList';
 import StaffMemberList from './pages/StaffMemberList';
@@ -44,6 +45,7 @@ function Nav() {
     { to: '/visit-records', label: '来店記録' },
     { to: '/daily-sales', label: '日次売上' },
     { to: '/daily-expenses', label: '日次経費' },
+    { to: '/daily-reports', label: '日報' },
     { to: '/stores', label: '店舗管理' },
     { to: '/users', label: 'ユーザー管理' },
     { to: '/staff-members', label: 'スタッフ管理' },
@@ -162,6 +164,7 @@ function AppContent() {
         <Route path="/visit-records" element={<ProtectedRoute><VisitRecordList /></ProtectedRoute>} />
         <Route path="/daily-sales" element={<ProtectedRoute><DailySalesEntry /></ProtectedRoute>} />
         <Route path="/daily-expenses" element={<ProtectedRoute><DailyExpenseEntry /></ProtectedRoute>} />
+        <Route path="/daily-reports" element={<ProtectedRoute><DailyReportList /></ProtectedRoute>} />
           <Route path="/store-targets" element={<ProtectedRoute><StoreTargetList /></ProtectedRoute>} />
         <Route path="/stores" element={<ProtectedRoute><StoreList /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
