@@ -18,6 +18,7 @@ router.register(r"daily-summaries", views.DailySummaryViewSet, basename="daily-s
 router.register(r"daily-reports", views.DailyReportViewSet, basename="daily-report")
 router.register(r"advance-requests", views.AdvanceRequestViewSet, basename="advance-request")
 router.register(r"store-targets", views.StoreTargetViewSet, basename="store-target")
+router.register(r"personal-ledger", views.PersonalLedgerEntryViewSet, basename="personal-ledger")
 
 urlpatterns = [
     path("", views.api_home),
@@ -30,5 +31,6 @@ urlpatterns = [
     path("monthly-store-rankings/", views.monthly_store_rankings),
     path("host-salary-settings/", views.host_salary_settings),
     path("host-salary-settings/preview/", views.host_salary_settings_preview),
+    path("personal-ledger/summary/", views.personal_ledger_summary),
     path("", include(router.urls)),
 ]

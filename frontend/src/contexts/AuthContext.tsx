@@ -8,7 +8,7 @@ const STORAGE_USER = 'cms_user';
 
 /** Paths allowed per role. Admin and Owner can access all. Supervisor = Manager + view all stores. */
 const ROLE_PATHS: Record<string, string[]> = {
-  Cast: ['/', '/customers', '/customers/register', '/visit-records', '/my-page'],
+  Cast: ['/', '/customers', '/customers/register', '/visit-records', '/my-page', '/personal-ledger'],
   Staff: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/my-page', '/performance-targets', '/store-targets', '/store-cast-overview'],
   Manager: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets', '/store-cast-overview', '/host-salary-settings'],
   Supervisor: ['/', '/customers', '/customers/register', '/visit-records', '/daily-sales', '/daily-expenses', '/daily-reports', '/staff-members', '/stores', '/my-page', '/performance-targets', '/store-targets'],

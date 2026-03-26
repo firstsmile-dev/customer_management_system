@@ -209,6 +209,35 @@ class HostSalarySetting(models.Model):
         db_table = "host_salary_settings"
 
 
+class PersonalLedgerEntry(models.Model):
+    """
+    キャスト向け個人家計簿（自分の収支メモ）。
+    """
+
+    class EntryType(models.TextChoices):
+        INCOME = "Income", "Income"
+        EXPENSE = "Expense", "Expense"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        CmsUser,
+        on_delete=models.CASCADE,
+        db_column="user_id",
+        related_name="personal_ledger_entries",
+    )
+    entry_date = models.DateField()
+    entry_type = models.CharField(max_length=255, choices=EntryType.choices)
+    amount = models.BigIntegerField()
+    category = models.CharField(max_length=255, blank=True, default="")
+    memo = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "personal_ledger_entries"
+        ordering = ["-entry_date", "-created_at"]
+
+
 class Customer(models.Model):
     """
     Maps to `customers`.

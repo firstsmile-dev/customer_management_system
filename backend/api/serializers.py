@@ -11,6 +11,7 @@ from .models import (
     CustomerProfile,
     DailySummary,
     HostSalarySetting,
+    PersonalLedgerEntry,
     PerformanceTarget,
     StaffMember,
     StoreTarget,
@@ -195,6 +196,23 @@ class HostSalarySettingSerializer(serializers.ModelSerializer):
         model = HostSalarySetting
         fields = ["id", "store", "tax_rate", "service_rate", "rounding_mode", "updated_at"]
         read_only_fields = ["id", "store", "updated_at"]
+
+
+class PersonalLedgerEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PersonalLedgerEntry
+        fields = [
+            "id",
+            "user",
+            "entry_date",
+            "entry_type",
+            "amount",
+            "category",
+            "memo",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
 
 
 class AdvanceRequestSerializer(serializers.ModelSerializer):

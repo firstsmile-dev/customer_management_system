@@ -21,6 +21,7 @@ import StoreTargetList from './pages/StoreTargetList';
 import StoreCastOverview from './pages/StoreCastOverview';
 import MonthlyStoreRankings from './pages/MonthlyStoreRankings';
 import HostSalarySettings from './pages/HostSalarySettings';
+import PersonalLedger from './pages/PersonalLedger';
 import type { AuthUser } from './types/auth';
 
 const NAV_LINKS: { to: string; label: string }[] = [
@@ -35,6 +36,7 @@ const NAV_LINKS: { to: string; label: string }[] = [
   { to: '/daily-sales', label: '日次売上' },
   { to: '/daily-expenses', label: '日次経費' },
   { to: '/daily-reports', label: '日報' },
+  { to: '/personal-ledger', label: '家計簿' },
   { to: '/host-salary-settings', label: '給与設定(ホスト)' },
   { to: '/stores', label: '店舗管理' },
   { to: '/users', label: 'ユーザー管理' },
@@ -176,6 +178,7 @@ function AppContent() {
       <Route path="/store-cast-overview" element={<ProtectedRoute><StoreCastOverview /></ProtectedRoute>} />
       <Route path="/monthly-rankings" element={<ProtectedRoute><MonthlyStoreRankings /></ProtectedRoute>} />
       <Route path="/host-salary-settings" element={<ProtectedRoute><HostSalarySettings /></ProtectedRoute>} />
+      <Route path="/personal-ledger" element={<ProtectedRoute><PersonalLedger /></ProtectedRoute>} />
     </Routes>
   );
 

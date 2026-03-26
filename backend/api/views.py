@@ -21,6 +21,7 @@ from .models import (
     DailySummary,
     DailyReport,
     HostSalarySetting,
+    PersonalLedgerEntry,
     PerformanceTarget,
     StaffMember,
     StoreTarget,
@@ -36,6 +37,7 @@ from .serializers import (
     DailySummarySerializer,
     DailyReportSerializer,
     HostSalarySettingSerializer,
+    PersonalLedgerEntrySerializer,
     PerformanceTargetSerializer,
     StaffMemberSerializer,
     StoreTargetSerializer,
@@ -163,6 +165,63 @@ class StoreViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
         return super().create(request, *args, **kwargs)
+
+
+class PersonalLedgerEntryViewSet(viewsets.ModelViewSet):
+    """
+    家計簿（個人収支）CRUD。
+    - Cast: 自分のデータのみ閲覧/作成/更新/削除
+    - それ以外: 利用不可
+    """
+
+    queryset = PersonalLedgerEntry.objects.all()
+    serializer_class = PersonalLedgerEntrySerializer
+
+    def _request_user(self):
+        return _get_request_cms_user(self.request)
+
+    def get_queryset(self):
+        cms_user = self._request_user()
+        if cms_user is None:
+            return PersonalLedgerEntry.objects.none()
+        if getattr(cms_user, "role", None) != CmsUser.Role.CAST:
+            return PersonalLedgerEntry.objects.none()
+        return PersonalLedgerEntry.objects.filter(user=cms_user).order_by("-entry_date", "-created_at")
+
+    def _deny_if_not_cast(self):
+        cms_user = self._request_user()
+        if cms_user is None:
+            return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+        if getattr(cms_user, "role", None) != CmsUser.Role.CAST:
+            return Response({"detail": "この機能はキャストのみ利用できます。"}, status=status.HTTP_403_FORBIDDEN)
+        return None
+
+    def create(self, request, *args, **kwargs):
+        err = self._deny_if_not_cast()
+        if err is not None:
+            return err
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=self._request_user())
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        err = self._deny_if_not_cast()
+        if err is not None:
+            return err
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        err = self._deny_if_not_cast()
+        if err is not None:
+            return err
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        err = self._deny_if_not_cast()
+        if err is not None:
+            return err
+        return super().destroy(request, *args, **kwargs)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -1045,6 +1104,45 @@ def host_salary_settings_preview(request):
             "total_sales": int(total_sales),
             "subtotal_estimated": subtotal,
             "total_from_subtotal_estimated": total_from_subtotal,
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def personal_ledger_summary(request):
+    """
+    キャスト本人の家計簿サマリー（月次）。
+    query: year, month（省略時は当月）
+    """
+    cms_user = _get_request_cms_user(request)
+    if not cms_user:
+        return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+    if getattr(cms_user, "role", None) != CmsUser.Role.CAST:
+        return Response({"detail": "この機能はキャストのみ利用できます。"}, status=status.HTTP_403_FORBIDDEN)
+
+    today = date.today()
+    try:
+        year = int(request.query_params.get("year", today.year))
+        month = int(request.query_params.get("month", today.month))
+    except (TypeError, ValueError):
+        return Response({"detail": "year と month は整数で指定してください。"}, status=status.HTTP_400_BAD_REQUEST)
+    if month < 1 or month > 12 or year < 2000 or year > 2100:
+        return Response({"detail": "無効な年月です。"}, status=status.HTTP_400_BAD_REQUEST)
+
+    entries = PersonalLedgerEntry.objects.filter(user=cms_user, entry_date__year=year, entry_date__month=month)
+    income = entries.filter(entry_type=PersonalLedgerEntry.EntryType.INCOME).aggregate(t=Sum("amount"))["t"] or 0
+    expense = entries.filter(entry_type=PersonalLedgerEntry.EntryType.EXPENSE).aggregate(t=Sum("amount"))["t"] or 0
+    balance = int(income) - int(expense)
+
+    return Response(
+        {
+            "year": year,
+            "month": month,
+            "income_total": int(income),
+            "expense_total": int(expense),
+            "balance": balance,
+            "entry_count": int(entries.count()),
         }
     )
 
